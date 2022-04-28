@@ -365,12 +365,15 @@ div.tocify {
 <h2>Step 2: Keys and Things</h2>
 <p>Before you can really get started cloning repos or actually, you know, using version control you’ll need to set up an SSH key to securely link your computer with GitHub. You can setup using RStudio or from a shell (like GitBash). The main difference between these two is that GitHub recommends using Ed25519 keys and RStudio will only create a RSA key. So to make things simple, I suggest just using the shell. I think this tutorial is pretty clear so I’ll just let you follow that instead of re-writing it all here.</p>
 <p><a href="https://happygitwithr.com/ssh-keys.html#create-an-ssh-key-pair">Set up the SSH key pair</a></p>
-<p>Here’s the code:</p>
-<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(usethis)</span>
-<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">use_git_config</span>(<span class="at">user.name =</span> <span class="st">&quot;YOUR GITHUB USERNAME&quot;</span>, <span class="at">user.email =</span> <span class="st">&quot;YOUR GITHUB EMAIL&quot;</span>)</span></code></pre></div>
+<p>Hopefully that process went smoothly.</p>
 </div>
 <div id="step-3-get-connected-with-github-finally" class="section level2">
 <h2>Step 3: Get Connected with GitHub (finally)</h2>
+<p>These next two steps are only important if you want to be working within the <code>toolingtransit</code> or another repo that you want on GitHub. Right now is a good place to check in and decided what you’re actually planning on doing. Do you want to just use the functions I’ve already made?</p>
+<p>In that case just install and load that package!</p>
+<div class="sourceCode" id="cb6"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb6-1"><a href="#cb6-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;toolingtransit&quot;</span>)</span>
+<span id="cb6-2"><a href="#cb6-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(toolingtransit)</span></code></pre></div>
+<p>If you’re interested in using GitHub in anyway, let’s continue on.</p>
 <p>I have already set up a GitHub repo for <code>toolingtransit</code>, so you’ll just need to import that repo into your RStudio. This way you can work within it. If you’re setting up a different repo, I still think it’s most useful to make it on GitHub and clone it, as opposed to making it on your own computer and then linking it to GitHub.</p>
 <p><strong>Just so you know, Steps 1 and 2 only need to be done once on each machine you use! This is great news, since they are a hassle!</strong></p>
 <p>Alrighty then, let’s get connected to <code>toolingtransit</code> or whatever project you want so we can get some actual work done.</p>
@@ -382,13 +385,9 @@ div.tocify {
 <h2>Step 4: Making Changes, Committing, Pushing, and Pulling</h2>
 <p>Now let’s actually do something productive.</p>
 <p>Go ahead and make some kind of change to a file in this repo. Maybe add a line of text to the <code>README.md</code>? Make sure you save that change!</p>
-<p>Now look to the left of your RStudio screen. There should be a tab thats says <code>Git</code> probably in the same quadrant that the <code>Environment</code> and <code>History</code> tabs are. Go ahead and select that tab. <code>Stage</code> the files you edited by clicking the stage button. They should highlight. Now select <code>Commit</code> and a new window will pop up. On the left in the comments window, write a brief summary of what changes you made. Now</p>
-<div id="stop" class="section level3">
-<h3>Stop!!</h3>
-<p><strong>Are you only interested in downloading the package? Then do the following</strong></p>
-<div class="sourceCode" id="cb7"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a><span class="fu">install.packages</span>(<span class="st">&quot;toolingtransit&quot;</span>)</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a><span class="fu">library</span>(toolingtransit)</span></code></pre></div>
-</div>
+<p>Now look to the left of your RStudio screen. There should be a tab thats says <code>Git</code> probably in the same quadrant that the <code>Environment</code> and <code>History</code> tabs are. Go ahead and select that tab. <code>Stage</code> the files you edited by clicking the stage button. They should highlight. Now select <code>Commit</code> and a new window will pop up. On the left in the comments window, write a brief summary of what changes you made. Now click the <code>Commit</code> button (directly below the comment window).</p>
+<p>The final step will be to <code>Push</code> these comments to the GitHub repo. Before you do this, it’s a good idea to always <code>Pull</code> beforehand to make sure someone somewhere else hasn’t also been editing something and you’re behind the times. So first select <code>Pull</code> and then <code>Push</code> that commit!!!</p>
+<p>Ta-da!!!! You’ve done it!</p>
 </div>
 
 

@@ -58,14 +58,19 @@ Before you can really get started cloning repos or actually, you know, using ver
 
 [Set up the SSH key pair](https://happygitwithr.com/ssh-keys.html#create-an-ssh-key-pair)
 
-Here's the code: 
-
-```{r eval = F}
-library(usethis)
-use_git_config(user.name = "YOUR GITHUB USERNAME", user.email = "YOUR GITHUB EMAIL")
-```
+Hopefully that process went smoothly. 
 
 ## Step 3: Get Connected with GitHub (finally)
+These next two steps are only important if you want to be working within the `toolingtransit` or another repo that you want on GitHub. Right now is a good place to check in and decided what you're actually planning on doing. Do you want to just use the functions I've already made? 
+
+In that case just install and load that package! 
+
+```{r, eval = FALSE}
+install.packages("toolingtransit")
+library(toolingtransit)
+```
+
+If you're interested in using GitHub in anyway, let's continue on. 
 
 I have already set up a GitHub repo for `toolingtransit`, so you'll just need to import that repo into your RStudio. This way you can work within it. If you're setting up a different repo, I still think it's most useful to make it on GitHub and clone it, as opposed to making it on your own computer and then linking it to GitHub. 
 
@@ -84,15 +89,9 @@ Now let's actually do something productive.
 
 Go ahead and make some kind of change to a file in this repo. Maybe add a line of text to the `README.md`? Make sure you save that change! 
 
-Now look to the left of your RStudio screen. There should be a tab thats says `Git` probably in the same quadrant that the `Environment` and `History` tabs are. Go ahead and select that tab. `Stage` the files you edited by clicking the stage button. They should highlight. Now select `Commit` and a new window will pop up. On the left in the comments window, write a brief summary of what changes you made. Now 
+Now look to the left of your RStudio screen. There should be a tab thats says `Git` probably in the same quadrant that the `Environment` and `History` tabs are. Go ahead and select that tab. `Stage` the files you edited by clicking the stage button. They should highlight. Now select `Commit` and a new window will pop up. On the left in the comments window, write a brief summary of what changes you made. Now click the `Commit` button (directly below the comment window). 
 
-### Stop!! 
+The final step will be to `Push` these comments to the GitHub repo. Before you do this, it's a good idea to always `Pull` beforehand to make sure someone somewhere else hasn't also been editing something and you're behind the times. So first select `Pull` and then `Push` that commit!!!
 
-**Are you only interested in downloading the package? Then do the following**
-
-```r
-install.packages("toolingtransit")
-library(toolingtransit)
-```
-
+Ta-da!!!! You've done it! 
 
