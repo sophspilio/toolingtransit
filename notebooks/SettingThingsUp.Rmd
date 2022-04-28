@@ -2,11 +2,10 @@
 title: "Setting Things Up: A Quick Git--GitHub--RStudio Guide"
 author: "Sophie Spiliotopoulos"
 output: 
-  html_document:
+  prettydoc::html_pretty:
     toc: TRUE
-    toc_float: TRUE
-    theme: united
-    highlight: tango
+    theme: cayman
+    highlight: github
 ---
 
 ```{r setup, include=FALSE}
@@ -63,10 +62,12 @@ Hopefully that process went smoothly.
 ## Step 3: Get Connected with GitHub (finally)
 These next two steps are only important if you want to be working within the `toolingtransit` or another repo that you want on GitHub. Right now is a good place to check in and decided what you're actually planning on doing. Do you want to just use the functions I've already made? 
 
-In that case just install and load that package! 
+In that case just install and load that package! We use `install.github` instead of `install.packages` since this is a github package! Make sure you have `devtools` installed and loaded before doing this
 
 ```{r, eval = FALSE}
-install.packages("toolingtransit")
+install.packages("devtools");library(devtools)
+
+install.github("sophiespilio/toolingtransit")
 library(toolingtransit)
 ```
 
