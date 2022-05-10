@@ -64,7 +64,7 @@ install.github("sophiespilio/toolingtransit")
 library(toolingtransit)
 ```
 
-If you're interested in using GitHub in anyway, let's continue on. 
+If you're interested in using GitHub in any way, let's continue on. 
 
 I have already set up a GitHub repo for `toolingtransit`, so you'll just need to import that repo into your RStudio. This way you can work within it. If you're setting up a different repo, I still think it's most useful to make it on GitHub and clone it, as opposed to making it on your own computer and then linking it to GitHub. 
 
