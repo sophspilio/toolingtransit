@@ -13,6 +13,9 @@
 #' "Arlington", ,"Fairfax County", "Fairfax city", "Loudoun", "Alexandria City","Falls Church City"
 
 countycensus <- function(County) {
+  #load required libraries
+  require(tidyverse)
+  require(censusapi)
   #pull census acs data for 2020, select variables for county
   CensusCnty <- get_acs(
     geography = "block group",
