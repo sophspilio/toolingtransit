@@ -43,7 +43,7 @@ countycensus <- function(County) {
            Under200PctPoverty = PovertyRatioTotalE - PovertyOver200PctE,
            area = st_area(.)) %>%
     #select only necessary variables (remove margin of error columns)
-    select(TotalPopulationE, HHCountE, Count0Car, TotalCommutersE, PublicTransportE, NonWhitePop, Under200PctPoverty, area)
+    select(TotalPopulationE, HHCountE, Count0Car, TotalCommutersE, PublicTransportE, NonWhitePop, Under200PctPoverty, GEOID, area)
   #set units for the area as square miles
   CensusCnty$area <- set_units(CensusCnty$area, mi^2)
   return(CensusCnty)
