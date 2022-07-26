@@ -10,6 +10,10 @@
 #'
 
 stoploc <- function(gtfszip, agency) {
+  require(tidyverse)
+  require(tidytransit)
+  require(sf)
+  require(units)
   ### All gtfs data is located in this file path
   GTFS_path <- file.path ("Z:",
                           "NVTC General",

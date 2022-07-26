@@ -16,6 +16,8 @@ countycensus <- function(County) {
   #load required libraries
   require(tidyverse)
   require(censusapi)
+  require(sf)
+  require(units)
   #pull census acs data for 2020, select variables for county
   CensusCnty <- get_acs(
     geography = "block group",
