@@ -1,11 +1,16 @@
 ---
 title: "Transit Agency Profiles"
 output: rmdformats::material
-
+css: custom.css
 ---
 
 ```{r setup, include=FALSE, message = F, warning = F}
 knitr::opts_chunk$set(echo = TRUE)
+
+```
+
+# Setting Up Your Variables
+```{r, eval = F}
 library(tidyverse)
 library(here)
 library(censusapi)
@@ -16,8 +21,6 @@ library(tidytransit)
 library(toolingtransit)
 library(mapview)
 ```
-
-# Setting Up Your Variables
 
 ## Census Data
 Load census data. For the transit agency profiles, we are using **tracts**. 
