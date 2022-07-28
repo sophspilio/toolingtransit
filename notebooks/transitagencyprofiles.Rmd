@@ -1,6 +1,11 @@
-#Transit Agency Profiles
+---
+title: "Transit Agency Profiles"
+output: rmdformats::material
 
-#load libraries
+---
+
+```{r setup, include=FALSE, message = F, warning = F}
+knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(here)
 library(censusapi)
@@ -10,17 +15,18 @@ library(units)
 library(tidytransit)
 library(toolingtransit)
 library(mapview)
+```
 
-#reload data
-CensusDataBG <- st_read("data/CensusData.shp")
-CensusDataTracts <- st_read("AgencyProfileData/CensusDataTracts.shp") %>% st_transform(crs = 4326)
-NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes_2022.shp")
-NovaStops_2022 <- st_read("AgencyProfileData/NovaStops_2022.shp")
-Nova <- st_read("data/Nova.shp")
+# Setting Up Your Variables
 
-# Census Tracts -----------------------------------------------------------
+## Census Data
+Load census data. For the transit agency profiles, we are using **tracts**. 
+Previous analyses (How the Pandemic Changed Transit) used **block groups**. 
 
-#function to get demographic data for CENSUS TRACTS
+
+This code varies slightly from the `countycensus` function found in `toolingtransit`. 
+As the name indicates, it outputs census tracts instead of block groups. 
+```{r, eval = F}
 countycensus_tract <- function(County) {
   #load required libraries
   require(tidyverse)
@@ -57,22 +63,55 @@ countycensus_tract <- function(County) {
   CensusCnty$area <- set_units(CensusCnty$area, mi^2)
   return(CensusCnty)
 }
+```
 
+
+Now we'll create a  polygon of census tracts for the Northern Virginia region. 
+**Note** that this code includese the `GEOID`, which we will need to identify and connect data spatially. 
+```{r, eval = F}
 NOVA_Counties <-  c("Arlington",
                     "Fairfax County",
                     "Fairfax city",
                     "Loudoun",
                     "Alexandria City",
                     "Falls Church City")
-
-#create census data for the whole region using CENSUS TRACTS
 CensusDataTracts <- countycensus_tract(NOVA_Counties)
-st_write(CensusDataTracts, "AgencyProfileData/CensusDataTracts.shp")
+```
 
+## Transit Stops
+### Creating `NovaStops`
 
-# NovaStops 2022 ---------------------------------------------------------------
-#  WITH LOUDOUN AND VRE, NO WMATA
+In case you need to re-run the stop data (perhaps there's been a change in the GTFS? or it's a new year?), you can use the incredibly convenient `stoploc` function from `toolingtransit`. I've included the function here too, in case you can't access `toolingtransit`. 
 
+#### stoploc
+```{r, eval = F}
+stoploc <- function(gtfszip, agency) {
+  require(tidyverse)
+  require(tidytransit)
+  require(sf)
+  require(units)
+  ### All gtfs data is located in this file path
+  GTFS_path <- file.path ("Z:",
+                          "NVTC General",
+                          "Projects and Programs",
+                          "Transit Resource Center (TRC)",
+                          "Data",
+                          "GTFS")
+
+  #establish gtfs data
+  CountyPath <- file.path(GTFS_path, gtfszip)
+  CountyGTFS <- read_gtfs(CountyPath)
+  #create spatial file for stops and select only necessary variables
+  CountyStopLoc <- stops_as_sf(CountyGTFS$stops) %>%
+    dplyr::select(stop_id) %>%
+    mutate("Agency" = agency)
+  return(CountyStopLoc)
+}
+```
+
+The transit agency profiles include data from ALL our transit agencies. Some of these are easier to come by than others. Let's begin with the easy: 
+
+```{r, eval = F}
 #Join 2022 stops
 NovaStops_2022 <- rbind(
   stoploc("2022-04_Arlington.zip", "ART"),
@@ -85,6 +124,20 @@ NovaStops_2022 <- rbind(
 
 #create columns for Agency name and for a newstop id that includes agency
 NovaStops_2022 <- NovaStops_2022 %>% mutate(AgencyName = Agency) %>% unite(stop_id, Agency, col = "newstop_id")
+```
+
+The only missing transit agency is WMATA. `stoploc` doesn't work here since the Metrobus and Metrorail data need to be clipped to only include Northern Virginia. Metrorail GTFS data also differs from the bus GTFS data, so this was formatted in Excel. In the following chunk, we clip the Metrobus data to Northern Virginia.
+
+You'll see that in the last line of the code, only the new `MetrobusStops` and our previously created `NovaStops_2022` are joined. we will also be adding in `Metrorailstops`, but this will happen a bit later in the process, since it was formatted outside of R.  
+
+
+```{r, eval = F}
+GTFS_path <- file.path ("Z:",
+                        "NVTC General",
+                        "Projects and Programs",
+                        "Transit Resource Center (TRC)",
+                        "Data",
+                        "GTFS")
 Metrobus2022 <- read_gtfs(file.path(GTFS_path, "2022-04_WMATA.zip"))
 MetrobusStops <- stops_as_sf(Metrobus2022$stops) %>%
   st_intersection(., Nova) %>%
@@ -92,16 +145,19 @@ MetrobusStops <- stops_as_sf(Metrobus2022$stops) %>%
   mutate(Agency = "WMATA") %>% unite(stop_id, Agency, col = "newstop_id") %>%
   mutate(AgencyName = "WMATA")
 
-#bind with the other nova agency stop data from above
+
+#joining agency stop data
+#but RAIL will be joined later in the process!
 NovaStops_2022wmata <- rbind(NovaStops_2022, MetrobusStops)
+```
+
+## Transit Routes and Stops
+### Creating `NovaStopsRoutes` 
+
+To find the amount of service provided, we use the Transit Service Index, or TSI. The formula requires we know the trip frequency at each stop. So using the following handy function, we count up the number of times per *week* a bus or train visits a stop. 
 
 
-# NovaStops 2022 -----------------------------------------------
-
-# NovaStopsRoutes 2022 ----------------------------------------------------
-# WITH LOUDOUN and VRE
-
-#function to find number of trips for each stop and join with routes
+```{r, eval = F}
 route_n_stop <- function(gtfszip, agency){
   GTFS_path <- file.path ("Z:",
                           "NVTC General",
@@ -110,40 +166,52 @@ route_n_stop <- function(gtfszip, agency){
                           "Data",
                           "GTFS")
   GTFS <- read_gtfs(file.path(GTFS_path, gtfszip))
+  #need service and number of days that service_ids use (multiplier)
+  Service <- GTFS$calendar %>%
+    mutate(multiplier = monday + tuesday + wednesday + thursday + friday + saturday + sunday)
   #stop_times has both the trip_id and stop_id
-  StopTrip <- GTFS$stop_times %>% select(trip_id, stop_id)
+  Stops <- GTFS$stop_times %>% select(trip_id, stop_id)
   #routes has trip_id and route_id
-  RouteTrip <- GTFS$trips %>% select(trip_id, route_id)
+  #don't filter by service_id except for VRE
+  if (agency == "VRE") {
+    Trip <- GTFS$trips %>% filter(service_id == "Regular") %>%
+      select(trip_id, route_id, service_id) %>%
+      left_join(., Service %>% select(service_id, multiplier))
+  } else {
+    Trip <- GTFS$trips %>%
+      select(trip_id, route_id, service_id) %>%
+      left_join(., Service %>% select(service_id, multiplier))
+  }
   #what we need is route_id and stop_id, if we join we can bring it all together
   #then select just the columns we need
-  Join <- full_join(StopTrip, RouteTrip) %>%
-    nest(trips = trip_id) %>%
-    rowwise() %>%
-    mutate(tripfreq = nrow(trips)) %>% select(route_id, stop_id, tripfreq) %>% mutate(agency = agency)
+  Join <- inner_join(Stops, Trip) %>%
+    #find count of trips by route_id, stop_id
+    group_by(route_id, stop_id, service_id, multiplier) %>% summarize(trips = n()) %>%
+    #if service_id is mutli-day, multiply by number of days of service
+    mutate(tripfreq = trips*multiplier ) %>%
+    #find sum of trip count for each route_id/stop_id
+    group_by(route_id, stop_id) %>% summarize(tripfreq = sum(tripfreq)) %>%
+    #add column for agency name
+    mutate(agency = agency) %>%
+    select(route_id, stop_id, tripfreq, agency)
   return(Join)
 }
+```
 
-#run above function for each agency
+Now run that lil function for each agency (minus WMATA, this will be done separately). 
+
+```{r, eval = F}
 ARTjoin_2022 <- route_n_stop("2022-04_Arlington.zip", "ART")
 CUEjoin_2022 <- route_n_stop("2022-03_CUE.zip", "CUE")
 DASHjoin_2022 <- route_n_stop("2022-04_DASH.zip", "DASH")
 FFXjoin_2022 <- route_n_stop("2022-03_Fairfax_Connector.zip", "FFX")
-LCTjoin_2022 <- route_n_stop("2022-03_Loudoun.zip", "LCT")
+LCTjoin_2022 <- route_n_stop("2022-07_Loudoun.zip", "LCT") #ISSUES wTIH TRIPFREQ
 VREjoin_2022 <- route_n_stop("2022-03_VRE.zip", "VRE")
+```
 
+Now we recreate `route_n_stop` for the slightly more complicated Metrobus: 
 
-GTFS_path <- file.path ("Z:",
-                        "NVTC General",
-                        "Projects and Programs",
-                        "Transit Resource Center (TRC)",
-                        "Data",
-                        "GTFS")
-
-
-#rail will be brougt in separately at the end
-
-
-#Metrobus route_n_stop join
+```{r, eval = F}
 Metrobus2022 <- read_gtfs(file.path(GTFS_path, "2022-04_WMATA.zip"))
 
 #need service and number of days that service_ids use (multiplier)
@@ -173,10 +241,16 @@ MetrobusJoin <- inner_join(MetrobusStops, MetrobusTrips) %>%
   #add column for agency name
   mutate(agency = "WMATA") %>%
   select(route_id, stop_id, tripfreq, agency)
+```
 
-#Metrorail route_n_stop join done outside of R
+
+...and for Metrorail. But actually we did the route_n_stop analysis outside of R because the GTFS is a bit more complicated. In the next chunk, we just read that data in and reformat it to fit the format of our other `Agencyjoin_2022` variables. The second part of the chunk reads the rail stop data, selects the entrance data, then joins it to the frequency of trip data. 
+
+
+```{r, eval = F}
+#
 Metrorailjoin_2022 <- read.csv("AgencyProfileData/Metrorail.csv", sep = ",")%>%
-  pivot_longer(cols = 2:5, names_to = "route_id", values_to = "tripfreq") %>%
+  pivot_longer(cols = 2:4, names_to = "route_id", values_to = "tripfreq") %>%
   rename(station = ï..stop_id) %>% relocate(station, .after = route_id) %>%
   mutate(agency = "WMATA")
 
@@ -189,8 +263,11 @@ Metrorailstops <- read.csv(file.path(GTFS_path, "2022-06_WMATA-Railstops.csv")) 
   filter(tripfreq != 0) %>%
   unite(station, stop_id, agency, sep = "_", col = "newstop_id") %>%
   unite(route_id, Agency, sep = "_", col = "newroute_id") %>% mutate(AgencyName = "WMATA")
+```
 
+Let's bring it all together and create one beautiful `NovaStopsRoutes` file!
 
+```{r, eval = F}
 #join all agencies (except rail, this is done after)
 Alljoin_2022 <- rbind(ARTjoin_2022,
                       CUEjoin_2022,
@@ -210,81 +287,103 @@ NovaStopsRoutes_2022 <- merge(Alljoin_2022, NovaStops_2022wmata) %>%
   mutate(Mode = ifelse(AgencyName == 'VRE', "CR", "Bus")) %>%
   #merge with rail  stops
   rbind(., Metrorailstops)
+```
 
-st_write(NovaStopsRoutes_2022, "AgencyProfileData/NovaStopsRoutes_2022.shp", append= FALSE)
-
-# Access to Transit: by Route ---------------------------------------------
-
-#function to find access to transit for each route
-
-#make function so that it does for each route, make loop to go through each route from list of routes
-#NO WMATA RAIL OR BUS THIS IS ONLY INCLUDED IN AMOUNT OF SERVICE
+Okay, we have set up everything we need for both the Access to Transit Service analysis and the Amount of Transit Service analysis. Let's get going! 
 
 
-#remove all wmata
+# Access to Transit Analysis
+
+Time to do some analysis! We will use `st_interpolate_aw` to find who has access to transit at the route level. The following function takes a route and creates a 1/4 mile (for bus), 1/3 mile (for Metrorail) , or 1 mile (for commuter rail) buffer at each stop in that route. Then we interpolate the demographic data to within that buffered area, to find how much of different populations have access to transit. 
+
+```{r, eval = F}
+access2transitbus <- function(route) {
+  #pull just the stops within a 1/4 mile radius of county
+  BuffJoin <- NovaStopsRoutes_2022 %>% filter(newroute_id == route) %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid()
+  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
+  #CensusJobs <- st_join(Census, JobsbyBG)
+  #interpolate census data to these stops
+  TransitCensus <- st_interpolate_aw(
+    CensusDataBG,
+    BuffJoin,
+    extensive = T
+  ) %>% st_drop_geometry() %>% as.data.frame()
+  return(TransitCensus)
+}
+
+#1 mile for commuter rail
+access2transitvre <- function(route) {
+  #pull just the stops within a 1/4 mile radius of county
+  BuffJoin <- NovaStopsRoutes_2022 %>% filter(newroute_id == route) %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid()
+  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
+  #CensusJobs <- st_join(Census, JobsbyBG)
+  #interpolate census data to these stops
+  TransitCensus <- st_interpolate_aw(
+    CensusDataBG,
+    BuffJoin,
+    extensive = T
+  ) %>% st_drop_geometry() %>% as.data.frame()
+  return(TransitCensus)
+}
+
+#1/2 mile for heavy rail
+access2transitHR <- function(route) {
+  #pull just the stops within a 1/4 mile radius of county
+  BuffJoin <- NovaStopsRoutes_2022 %>% filter(newroute_id == route) %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid()
+  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
+  #CensusJobs <- st_join(Census, JobsbyBG)
+  #interpolate census data to these stops
+  TransitCensus <- st_interpolate_aw(
+    CensusDataBG,
+    BuffJoin,
+    extensive = T
+  ) %>% st_drop_geometry() %>% as.data.frame()
+  return(TransitCensus)
+}
+
+```
+
+
+This function only find the interpolated demographic data for one route. To find this for each route, we use `lapply` to loop through every route in our file and run the function. 
+
+Because of the difference in radii for commuter rail and bus, we run these separately and then combine them at the end. 
+
+We are not including WMATA (Metrorail or Metrobus) in the access to transit analysis. So before we get started, we remove WMATA data from our `NovaStopsRoutes` file. Also, the interpolation doens't like non-numeric data, so we remove the GEOID from `CensusDataTracts`. 
+
+```{r, eval = F}
+#list of all routes for ART, DASH, CUE, FFX, LCT, VRE
+
 NovaStopsRoutes_NOWMATA <- NovaStopsRoutes_2022 %>% filter(AgencyName != "WMATA")
 
 CensusDataTracts <- st_read("AgencyProfileData/CensusDataTracts.shp") %>%
   st_transform(crs = 4326) %>%
   select(-GEOID)
 
-
-
-#unit of analysis is route and agency
-#1/4 mile for bus
-access2transitbus <- function(route) {
-  #pull just the stops within a 1/4 mile radius of county
-  BuffJoin <- NovaStopsRoutes_2022 %>% filter(newrt_d == route) %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid()
-  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
-  #CensusJobs <- st_join(Census, JobsbyBG)
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    CensusDataTracts,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-#1 mile for commuter rail
-access2transitvre <- function(route) {
-  #pull just the stops within a 1/4 mile radius of county
-  BuffJoin <- NovaStopsRoutes_2022 %>% filter(newrt_d == route) %>%
-    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid()
-  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
-  #CensusJobs <- st_join(Census, JobsbyBG)
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    CensusDataTracts,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-
-#list of all routes for ART, DASH, CUE, FFX, LCT, VRE
-routes <- NovaStopsRoutes_2022 %>% distinct(newroute_id, AgencyName, Mode) %>% as.data.frame()
+routes <- NovaStopsRoutes_2022 %>% distinct(newroute_id, AgencyName, Mode, rte_id) %>% as.data.frame()
 st_write(routes, "AgencyProfileData/routes.csv")
 
-busroutes <- routes %>% filter(Mode == "Bus", AgncyNm != "WMATA")
+busroutes <- routes %>% filter(Mode == "Bus")
 crroutes <- routes %>% filter(Mode == "CR")
-
 
 #loop through all nova routes to find access to transit at route level
 #do bus and rail separately (since they have different buffer radii), then combine
-NovaAccessTransit_Bus <- lapply(busroutes$newrt_d, access2transitbus) %>%
+NovaAccessTransit_Bus <- lapply(busroutes$newroute_id, access2transitbus) %>%
   do.call(rbind.data.frame, .) %>% cbind(busroutes, .)
 
-NovaAccessTransit_VRE <- lapply(crroutes$newrt_d, access2transitvre) %>%
+NovaAccessTransit_VRE <- lapply(crroutes$newroute_id, access2transitvre) %>%
   do.call(rbind.data.frame, .) %>% cbind(crroutes, .)
-
 
 #combine
 NovaAccessTransit <- rbind(NovaAccessTransit_VRE, NovaAccessTransit_Bus)
 
-#save as a csv
-st_write(NovaAccessTransit, "AgencyProfileData/NovaAccessTransit.csv", append = FALSE)
-#run again for each agency
+```
+
+So we looked at the route-level access to transit. We can also look at this at an agency level. To do that, we just alter the function a bit and run through each agency (except WMATA). 
+
+```{r, eval = F}
 
 access2transitagency <- function(agency, buffer) {
   #pull just the stops within a 1/4 mile radius of county
@@ -309,9 +408,19 @@ LCT <- access2transitagency("LCT", 400) %>% mutate(Agency = "LCT")
 VRE <- access2transitagency("VRE", 1600) %>% mutate(Agency = "VRE")
 
 NovaAccessTransitbyAgency <- rbind(ART,CUE,DASH,FFX,LCT,VRE)
-st_write(NovaAccessTransitbyAgency, "AgencyProfileData/NovaAccessTransitbyAgency.xlsx")
-# Amount of Service -------------------------------------------------------
+```
 
+
+
+# Amount of Service Analysis
+
+Now it's time for some amount of service analysis. Instead of looking at who has access to transit, we look at how *much* service each census tract by using the TSI, as mentioned above. Let's get going!
+
+Oops, you'll want the census tracts to have the GEOID, so we'll reload that to include the right variables.
+
+```{r, eval = F}
+
+CensusDataTracts <- st_read("AgencyProfileData/CensusDataTracts.shp") %>% st_transform(crs = 4326)
 
 # Using Census Tracts
 amount_service <- function(newroute_id){
@@ -347,15 +456,18 @@ amount_service <- function(newroute_id){
 
   return(AmountService)
 }
-NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes_2022.shp")
+```
+
+We'll also run this analysis at the route level. Unlike access to transit, the amount of service analysis is additive. So we'll run it at the route level and be able to add up all the service for each GEOID (Census Tract). 
+
+
+Since it's route level and we don't want to run like 200 different functions manually, we'll use `lapply` like we did before. 
+```{r, eval = F}
 routes <- NovaStopsRoutes_2022 %>% distinct(newrt_d, AgncyNm, Mode) %>% as.data.frame()
 
 
 #run loop through all routes
 nova_amount <- lapply(routes$newrt_d, amount_service) %>%
   do.call(rbind.data.frame, .)
+```
 
-
-
-st_write(nova_amount, "AgencyProfileData/NovaAmountTransit.csv")
-st_write(nova_amount, "AgencyProfileData/NovaAmountTransit.shp", append = F)
