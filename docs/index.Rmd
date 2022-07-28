@@ -1,16 +1,18 @@
 ---
-output: html_document
+title: ToolingTransit
+output: 
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: github
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-# ToolingTransit
-
 #### Find some helpful info documenting current analyses in the Transit Resource Center
 
 
-- [Setting Things Up](docs/SettingThingsUp.html)
+- [Setting Things Up](SettingThingsUp.html)
 
-- [Transit Agency Profiles](docs/transitagencyprofiles.html)
+- [Transit Agency Profiles](transitagencyprofiles.html)

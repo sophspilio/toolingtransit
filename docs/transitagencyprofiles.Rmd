@@ -1,7 +1,10 @@
 ---
 title: "Transit Agency Profiles"
-output: rmdformats::material
-css: custom.css
+output: 
+  prettydoc::html_pretty:
+    toc: TRUE
+    theme: cayman
+    highlight: github
 ---
 
 ```{r setup, include=FALSE, message = F, warning = F}
