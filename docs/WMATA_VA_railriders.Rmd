@@ -1,12 +1,17 @@
-#setup
-library(tidyverse)
-library(readxl)
-library(data.table)
-library(lubridate)
-library(openxlsx)
+---
+title: "WMATA Virginia Rail Ridership"
+date: "[Back to home](index.html)"
+output: rmdformats::readthedown
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+NVTC reports WMATA rail ridership for Northern Virgnia to the Virginia Department of Rail and Public Transportation. For ease of processing each month, NVTC has created a function that calculates the Va share of rail riders. Check it out below. 
 
 
-
+```{r, eval = F}
 metroridersVA <- function(month, year, file) {
   require(dplyr)
   require(lubridate)
@@ -101,12 +106,11 @@ metroridersVA <- function(month, year, file) {
     "Total VA UPT" = TotalVAUnlinked)
   return(t_data)
 }
+```
 
+If we want to run this for each month, we can simply use `rbind`: 
 
-##################################################
-file <- "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Analysis/Metro Ridership Workbooks/FY 2022/MASTER NVTC Metrorail Ridership FY22.xlsx"
-#create data table for VA UPT
-#for new month, add line in rbind
+```{r, eval = F}
 rail_riders <- rbind(
   metroridersVA('Jul', 2021, file),
   metroridersVA('Aug', 2021, file),
@@ -121,10 +125,6 @@ rail_riders <- rbind(
   metroridersVA('May', 2022, file),
   metroridersVA('Jun', 2022, file)
 )
+```
 
-###write to excel
-
-wb <- loadWorkbook("Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx")
-writeData(wb, sheet = "MetroRail", rail_riders)
-saveWorkbook(wb, "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx", overwrite = T)
-
+where we replace `file` with the relevant file path. 
