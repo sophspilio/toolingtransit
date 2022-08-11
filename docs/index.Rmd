@@ -1,18 +1,21 @@
 ---
 title: ToolingTransit
-output: 
-  prettydoc::html_pretty:
-    theme: cayman
-    highlight: github
+author: "[NVTC Transit Resource Center](https://novatransit.org/resources/)"
+output: rmdformats::readthedown
 ---
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-#### Find some helpful info documenting current analyses in the Transit Resource Center
+#### Find some helpful info documenting current analyses at the NVTC Transit Resource Center
 
 
 - [Setting Things Up](SettingThingsUp.html)
 
+
 - [Transit Agency Profiles](transitagencyprofiles.html)
+  * [Dimension Tables](Profiles_DimTables.html)
+  * [Fact Tables](Profiles_FactTables.html)
+  
+  

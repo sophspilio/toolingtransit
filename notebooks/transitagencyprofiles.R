@@ -69,6 +69,148 @@ NOVA_Counties <-  c("Arlington",
 CensusDataTracts <- countycensus_tract(NOVA_Counties)
 st_write(CensusDataTracts, "AgencyProfileData/CensusDataTracts.shp")
 
+#a bit more code for Census by block group or census tract
+# this code  keeps the NAME column for better identification as dimension table
+# a la Power BI
+#Census Tracts
+
+CensusTracts <- get_acs(
+  geography = "tract",
+  year = 2020,
+  variables = c(TotalPopulation = "B01003_001",
+                TotalCommuters = "B08301_001",
+                DriveAlone = "B08301_003",
+                PublicTransport = "B08301_010",
+                HHCount = "B25044_001",
+                PovertyRatioTotal = "C17002_001",
+                PovertyOver200Pct = "C17002_008",
+                HHOwn0Veh = "B25044_003",
+                HHRent0Veh = "B25044_010",
+                WhitePop = "B02001_002"),
+  state = "VA",
+  county = c("Arlington",
+             "Fairfax County",
+             "Fairfax city",
+             "Loudoun",
+             "Alexandria City",
+             "Falls Church City"),
+  geometry = TRUE,
+  output = "wide") %>%mutate(Count0Car = HHOwn0VehE + HHRent0VehE,
+                             NonWhitePop = TotalPopulationE - WhitePopE,
+                             Under200PctPoverty = PovertyRatioTotalE - PovertyOver200PctE,
+                             area = st_area(.)) %>%
+  #select only necessary variables (remove margin of error columns)
+  select(NAME, GEOID, TotalPopulationE,
+         HHCountE, Count0Car, TotalCommutersE,
+         PublicTransportE, NonWhitePop, Under200PctPoverty, area)
+
+#set units for the area as square miles
+CensusTracts$area <- set_units(CensusTracts$area, mi^2)
+
+
+#Census Block Groups
+CensusBGs <- get_acs(
+  geography = "block group",
+  year = 2020,
+  variables = c(TotalPopulation = "B01003_001",
+                TotalCommuters = "B08301_001",
+                DriveAlone = "B08301_003",
+                PublicTransport = "B08301_010",
+                HHCount = "B25044_001",
+                PovertyRatioTotal = "C17002_001",
+                PovertyOver200Pct = "C17002_008",
+                HHOwn0Veh = "B25044_003",
+                HHRent0Veh = "B25044_010",
+                WhitePop = "B02001_002"),
+  state = "VA",
+  county = c("Arlington",
+             "Fairfax County",
+             "Fairfax city",
+             "Loudoun",
+             "Alexandria City",
+             "Falls Church City"),
+  geometry = TRUE,
+  output = "wide") %>%mutate(Count0Car = HHOwn0VehE + HHRent0VehE,
+                             NonWhitePop = TotalPopulationE - WhitePopE,
+                             Under200PctPoverty = PovertyRatioTotalE - PovertyOver200PctE,
+                             area = st_area(.)) %>%
+  #select only necessary variables (remove margin of error columns)
+  select(NAME, GEOID, TotalPopulationE,
+         HHCountE, Count0Car, TotalCommutersE,
+         PublicTransportE, NonWhitePop, Under200PctPoverty, area)
+
+#set units for the area as square miles
+CensusBGs$area <- set_units(CensusBGs$area, mi^2)
+
+
+
+
+# Routes Dim Table --------------------------------------------------------
+
+
+
+#route with route name
+route_list <- function(gtfszip, agency){
+  GTFS <- read_gtfs(file.path(GTFS_path, gtfszip))
+  routes <- GTFS$routes %>% select(route_id, route_short_name) %>% mutate(Agency = agency)
+  return(routes)
+}
+
+
+#add Metrobus separately
+## need to separate out routes that go into va, will use stop file bc its spatial for this
+Metrobus2022 <- read_gtfs(file.path(GTFS_path, "2022-04_WMATA.zip"))
+
+# stops: spatial  filter to nova
+MetrobusStops <- stops_as_sf(Metrobus2022$stops) %>%
+  #spatially filter to only the stops in va
+  st_intersection(.,Nova) %>%
+  st_drop_geometry() %>%
+  left_join(., Metrobus2022$stop_times) %>% select(trip_id, stop_id)
+
+# trips
+MetrobusTrips <- Metrobus2022$trips %>% #filter(service_id == Metrobus_service04) %>%
+  select(trip_id, route_id, service_id)
+
+#join stops and trips
+MetrobusJoin <- inner_join(MetrobusStops, MetrobusTrips) %>%
+  #join with route file to get route short name
+  left_join(., Metrobus2022$routes) %>% select(route_id, route_short_name) %>% distinct()
+
+
+#find count of trips by route_id, stop_id
+group_by(route_id, stop_id, service_id, multiplier) %>% summarize(trips = n()) %>%
+  #if service_id is mutli-day, multiply by number of days of service
+  mutate(tripfreq = trips*multiplier ) %>%
+  #find sum of trip count for each route_id/stop_id
+  group_by(route_id, stop_id) %>% summarize(tripfreq = sum(tripfreq)) %>%
+  #add column for agency name
+  mutate(agency = "WMATA") %>%
+  select(route_id, stop_id, tripfreq, agency)
+
+#get short names for rail
+Metrorail2022 <- read_gtfs(file.path(GTFS_path, "2022-06_Metrorail.zip"))
+Metrorailroutes <- Metrorail2022$routes %>% filter(route_id == "BLUE" |
+                                                     route_id == "ORANGE" |
+                                                     route_id == "SILVER" |
+                                                     route_id == "YELLOW") %>%
+  select(route_id, route_short_name)
+
+
+#make master route list
+routes <- rbind(route_list("2022-04_Arlington.zip", "ART") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_CUE.zip", "CUE") %>% mutate(Mode = "Bus"),
+                route_list("2022-04_DASH.zip", "DASH") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_Fairfax_Connector.zip", "FFX") %>% mutate(Mode = "Bus"),
+                route_list("2022-07_Loudoun.zip", "LCT") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_VRE.zip", "VRE") %>% mutate(Mode = "CR"),
+                MetrobusJoin %>% mutate(Agency = "WMATA") %>% mutate(Mode = "Bus"),
+                Metrorailroutes %>% mutate(Agency = "WMATA") %>% mutate(Mode = "HR")) %>%
+  unite(route_id, Agency, col = NewRouteID, sep = "_", remove = F)
+
+
+
+
 
 # NovaStops 2022 ---------------------------------------------------------------
 #  WITH LOUDOUN AND VRE, NO WMATA
@@ -359,3 +501,46 @@ nova_amount <- lapply(routes$newrt_d, amount_service) %>%
 
 st_write(nova_amount, "AgencyProfileData/NovaAmountTransit.csv")
 st_write(nova_amount, "AgencyProfileData/NovaAmountTransit.shp", append = F)
+
+
+## by Agency
+
+CensusDataTracts <- st_read("AgencyProfileData/CensusDataTracts.shp") %>% st_transform(crs = 4326)
+
+# Using Census Tracts
+amount_serviceAGENCY <- function(Agency){
+  #create county shape and transform
+  CountyShp <- CensusDataTracts %>% select(GEOID) %>% st_transform(crs = 4326)
+
+  #summarize stop frequency at the agency level
+  Ag_County <- NovaStopsRoutes_2022 %>% filter(AgncyNm == Agency) %>%
+    group_by(newrt_d, Mode) %>% summarize(stopfreq = mean(tripfrq))
+
+  #buffer the stops, conditional if its a commuter rail (1 mile radius) or bus (1/4 mi)
+  Ag_CountyBuff <- Ag_County %>% st_buffer(., ifelse(.$Mode == "CR", 1600,
+                                                     ifelse(.$Mode == "HR", 800,
+                                                            400))) %>%
+    mutate(area = st_area(geometry))
+
+  #set units to square miles
+  Ag_CountyBuff$area <- set_units(Ag_CountyBuff$area, mi^2)
+
+  #calculate area times stop frequency
+  #select only numeric values for interpolation
+  Ag_CountyBuff <- Ag_CountyBuff %>% mutate(calcTSI = area*stopfreq) %>% select(calcTSI)
+
+  #interpolate "TSI" for each census block group
+  CountyInterpol <- st_interpolate_aw(Ag_CountyBuff, CountyShp, extensive = T) %>%
+    mutate(area = st_area(.))
+  CountyInterpol$area <- set_units(CountyInterpol$area, mi^2)
+
+  #calculate TSI
+  CountyInterpol <- CountyInterpol %>% mutate(TSI = calcTSI/area) %>% select(TSI, area)
+  #join with census data to have associated GEOIDs
+  AmountService <- st_join(CountyInterpol, CountyShp, join = st_equals) %>%
+    mutate(Agency = Agency)
+
+  return(AmountService)
+}
+
+amount_serviceAGENCY("ART")

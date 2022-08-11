@@ -1,11 +1,10 @@
 ---
-title: "Setting Things Up: A Quick Git--GitHub--RStudio Guide"
-author: "Sophie Spiliotopoulos"
+title: "Setting Things Up"
+subtitle: "A Quick Git/GitHub/RStudio Guide"
+date: "[Back to home](index.html)"
 output: 
-  prettydoc::html_pretty:
-    toc: TRUE
-    theme: cayman
-    highlight: github
+  rmdformats::readthedown:
+    toc_depth: 3
 ---
 
 ```{r setup, include=FALSE}
@@ -19,12 +18,12 @@ Before we can do anything, you'll need to download `git`. I won't go into the ni
 Quickly check you don't have git already on your computer: 
 
 Run this in the `terminal` to see where your git is (if you have one)
-```{bash}
+```{bash, eval = F}
 which git
 ```
 
 and then run this to see what version you have
-```{bash}
+```{bash, eval = F}
 git --version
 ```
 

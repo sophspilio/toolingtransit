@@ -1,0 +1,165 @@
+---
+title: "Dimension Tables"
+date: "[Back to home](index.html)"
+output: 
+  rmdformats::readthedown:
+    toc_depth: 3
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+There are **three** dimension tables for the Transit Agency Profiles: 
+- Census Tracts (including GEOIDs)
+- Routes
+- Calendar (this is actually created in Excel, but it's good to document it here as well)
+
+
+#### Load Packages and Variables
+
+```{r, eval = F}
+library(tidyverse)
+library(here)
+library(censusapi)
+library(tidycensus)
+library(sf)
+library(units)
+library(tidytransit)
+library(toolingtransit)
+Nova <- st_read("data/Nova.shp")
+```
+
+
+## Census Tracts
+
+Our analyses go down to the Census Tract level, so we will use the `censusapi` and `tidycensus` to pull the tract GEOID, Name, and Area (in square miles) for the six NVTC member jurisidctions. Let's get started! 
+
+
+```{r, eval = FALSE}
+# NVTC's member jurisdictions
+NOVA_Counties <-  c("Arlington",
+                    "Fairfax County",
+                    "Fairfax city",
+                    "Loudoun",
+                    "Alexandria City",
+                    "Falls Church City")
+
+#pull census acs data for 2020
+CensusTracts <- get_acs(
+    geography = "tract",
+    year = 2020,
+    variables = "B01003_001", 
+    state = "VA",
+    county = NOVA_Counties,
+    geometry = TRUE,
+    output = "wide"
+  ) %>%
+    #calculate new variables
+    mutate(area = st_area(.)) %>%
+    #select only necessary variables (remove margin of error columns)
+    select(NAME, GEOID, area)
+  #set units for the area as square miles
+  CensusTracts$area <- set_units(CensusTracts$area, mi^2)
+
+```
+
+that was relatively painless. Let's move on to Routes, which will be a bit more involved. 
+
+## Routes 
+#### (and Agency and Mode)
+
+We will now create a dimension table for all the routes for all agencies in Northern Virginia (including WMATA) using GTFS. 
+
+
+To streamline the process, create a function that pulls the routes from the GTFS files. 
+```{r, eval = F}
+
+#route with route name
+route_list <- function(gtfszip, agency){
+  GTFS <- read_gtfs(file.path(GTFS_path, gtfszip))
+  routes <- GTFS$routes %>% select(route_id, route_short_name) %>% mutate(Agency = agency)
+  return(routes)
+}
+
+```
+
+
+WMATA bus and rail data needs to be spatially filtered to only include the Virginia routes. For the Metrobus data, there are multiple iterations of joins done to connect the stop data (which has the necessary geometry to spatially clip to Northern VA) to the route data (which has the `route_id`). 
+
+```{r, eval = F}
+#add Metrobus separately
+## need to separate out routes that go into va, will use stop file bc its spatial for this
+Metrobus2022 <- read_gtfs(file.path(GTFS_path, "2022-04_WMATA.zip"))
+
+# stops: spatialfilter to nova
+MetrobusStops <- stops_as_sf(Metrobus2022$stops) %>%
+  #spatially filter to only the stops in va
+  st_intersection(.,Nova) %>%
+  st_drop_geometry() %>%
+  left_join(., Metrobus2022$stop_times) %>% select(trip_id, stop_id)
+
+# trips
+MetrobusTrips <- Metrobus2022$trips %>% 
+  select(trip_id, route_id)
+
+#join stops and trips
+MetrobusJoin <- inner_join(MetrobusStops, MetrobusTrips) %>%
+  #join with route file to get route short name
+  left_join(., Metrobus2022$routes) %>% select(route_id, route_short_name) %>% distinct()
+
+```
+
+The Metrorail data is simpler. The only lines(routes) that go through Virginia are Blue, Orange, Silver, and Yellow, so we manually filter using `dplyr` from the Metrorail GTFS. 
+
+
+```{r, eval = F}
+
+#get short names for rail
+Metrorail2022 <- read_gtfs(file.path(GTFS_path, "2022-06_Metrorail.zip"))
+Metrorailroutes <- Metrorail2022$routes %>% filter(route_id == "BLUE" |
+                                                     route_id == "ORANGE" |
+                                                     route_id == "SILVER" |
+                                                     route_id == "YELLOW") %>%
+  select(route_id, route_short_name)
+
+```
+
+
+Bringing it all together and add new columns for the Mode and a column for a `NewRouteID`, which will help us tie this dimension table to some of the fact tables. 
+```{r, eval = F}
+#make master route list
+routes <- rbind(route_list("2022-04_Arlington.zip", "ART") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_CUE.zip", "CUE") %>% mutate(Mode = "Bus"),
+                route_list("2022-04_DASH.zip", "DASH") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_Fairfax_Connector.zip", "FFX") %>% mutate(Mode = "Bus"),
+                route_list("2022-07_Loudoun.zip", "LCT") %>% mutate(Mode = "Bus"),
+                route_list("2022-03_VRE.zip", "VRE") %>% mutate(Mode = "CR"),
+                MetrobusJoin %>% mutate(Agency = "WMATA") %>% mutate(Mode = "Bus"),
+                Metrorailroutes %>% mutate(Agency = "WMATA") %>% mutate(Mode = "HR")) %>%
+  unite(route_id, Agency, col = NewRouteID, sep = "_", remove = F)
+
+```
+
+
+## Calendar 
+
+The final dimension table will include the temporal data, especially important for the ridership fact table. This table is created in Excel, but below is a sample of what it will look like. 
+
+```{r, eval = T, include = F}
+library(knitr)
+calendar <- data.frame(
+  CalendarYear = c(2018, 2018, 2018, 2018), 
+  MonthNum = c(7, 7, 7, 7), 
+  Day = c(1, 2, 3, 4), 
+  DayofWeek = c("Sunday", "Monday", "Tuesday", "Wednesday"), 
+  Workday = c("Weekend", "Weekday", "Weekday", "Weekday"),
+  FiscalYear = c(2018, 2018, 2018, 2018)
+)
+```
+
+```{r, eval = T, echo=FALSE}
+kable(calendar, caption = "Calendar Dimension Table example")
+```
+
+
