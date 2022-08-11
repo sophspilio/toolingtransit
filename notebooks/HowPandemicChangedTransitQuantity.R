@@ -23,7 +23,7 @@ Nova <- st_read("data/Nova.shp")
 
 
 
-# 2019 data prep --------------------------------------------------------------------
+# 2019 data prep ---------------------------------------------------------------
 
 #function to join together all stops with the routes and count stops per week
 route_n_stop <- function(gtfszip, agency){
