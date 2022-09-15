@@ -64,7 +64,7 @@ In that case just install and load that package! We use `install.github` instead
 
 ```{r, eval = FALSE}
 install.packages("devtools");library(devtools)
-install.github("sophiespilio/toolingtransit")
+install_github("sophspilio/toolingtransit")
 library(toolingtransit)
 ```
 
