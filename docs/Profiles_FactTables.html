@@ -189,18 +189,11 @@
     <h2><a href="#content">Fact Tables</a></h2>
     <div id="toc">
       <ul>
-      <li><a href="#service">Service</a></li>
-      <li><a href="#access-to-transit">Access to Transit</a>
-      <ul>
       <li><a href="#set-it-up">Set It Up!</a></li>
-      <li><a href="#acccess-to-transit-for-real-this-time">Acccess to Transit (for real this time)</a></li>
-      </ul></li>
-      <li><a href="#amount-of-service">Amount of Service</a>
-      <ul>
-      <li><a href="#by-route">by Route</a></li>
-      <li><a href="#by-agency">by Agency</a></li>
-      </ul></li>
+      <li><a href="#access-to-transit">Access to Transit</a></li>
+      <li><a href="#amount-of-service">Amount of Service</a></li>
       <li><a href="#census">Census</a></li>
+      <li><a href="#service">Service</a></li>
       </ul>
     </div>
     <div id="postamble" data-toggle="wy-nav-shift" class="status">
@@ -230,14 +223,8 @@
 <li>Census</li>
 </ul>
 <p><strong>A note before we begin: this is a very long document. If you’d like to skip to a certain point in the page, click the table of contents items over to the left</strong></p>
-<div id="service" class="section level2">
-<h2>Service</h2>
-<p><strong>Sophie is going to work on adding R code for the Service section, so ignore this section for now!</strong></p>
-</div>
-<div id="access-to-transit" class="section level2">
-<h2>Access to Transit</h2>
-<div id="set-it-up" class="section level3">
-<h3>Set It Up!</h3>
+<div id="set-it-up" class="section level2">
+<h2>Set It Up!</h2>
 <p>Oops! There’s actually some Very Important pre-processing that needs to occur before anything can happen with the analysis. We are going to create a <code>NovaStops</code> file with the stop data for all the routes in Northern Va. Using this, we will then create a <code>NovaStopsRoutes</code> file that gives us, you guessed it, all the stops and the associated routes. This file also includes one other very important piece of information: the count of trips for each stop. You’ll see how we use that a bit later.</p>
 <div id="creating-novastops" class="section level4">
 <h4>Creating <code>NovaStops</code></h4>
@@ -274,11 +261,13 @@
 <span id="cb2-5"><a href="#cb2-5" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-04_DASH.zip&quot;</span>, <span class="st">&quot;DASH&quot;</span>),</span>
 <span id="cb2-6"><a href="#cb2-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-03_Fairfax_Connector.zip&quot;</span>, <span class="st">&quot;FFX&quot;</span>),</span>
 <span id="cb2-7"><a href="#cb2-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-07_Loudoun.zip&quot;</span>, <span class="st">&quot;LCT&quot;</span>),</span>
-<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-03_VRE.zip&quot;</span>, <span class="st">&quot;VRE&quot;</span>)</span>
-<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>)</span>
-<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a><span class="co">#create columns for Agency name and for a newstop id that includes agency</span></span>
-<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a>NovaStops_2022 <span class="ot">&lt;-</span> NovaStops_2022 <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">AgencyName =</span> Agency) <span class="sc">%&gt;%</span> <span class="fu">unite</span>(stop_id, Agency, <span class="at">col =</span> <span class="st">&quot;newstop_id&quot;</span>)</span></code></pre></div>
+<span id="cb2-8"><a href="#cb2-8" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-03_VRE.zip&quot;</span>, <span class="st">&quot;VRE&quot;</span>),</span>
+<span id="cb2-9"><a href="#cb2-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">stoploc</span>(<span class="st">&quot;2022-03_OmniRide_PRTC (2).zip&quot;</span>, <span class="st">&quot;PRTC&quot;</span>)</span>
+<span id="cb2-10"><a href="#cb2-10" aria-hidden="true" tabindex="-1"></a>)</span>
+<span id="cb2-11"><a href="#cb2-11" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb2-12"><a href="#cb2-12" aria-hidden="true" tabindex="-1"></a><span class="co">#create columns for Agency name and for a newstop id that includes agency</span></span>
+<span id="cb2-13"><a href="#cb2-13" aria-hidden="true" tabindex="-1"></a>NovaStops_2022 <span class="ot">&lt;-</span> NovaStops_2022 <span class="sc">%&gt;%</span></span>
+<span id="cb2-14"><a href="#cb2-14" aria-hidden="true" tabindex="-1"></a>  <span class="fu">unite</span>(stop_id, Agency, <span class="at">col =</span> <span class="st">&quot;newstop_id&quot;</span>,<span class="at">remove =</span> F)</span></code></pre></div>
 <p>The only missing transit agency is WMATA. <code>stoploc</code> doesn’t work here since the Metrobus and Metrorail data need to be clipped to only include Northern Virginia. Metrorail GTFS data also differs from the bus GTFS data, so this was formatted in Excel. In the following chunk, we clip the Metrobus data to Northern Virginia.</p>
 <p>You’ll see that in the last line of the code, only the new <code>MetrobusStops</code> and our previously created <code>NovaStops_2022</code> are joined. we will also be adding in <code>Metrorailstops</code>, but this will happen a bit later in the process, since it was formatted outside of R.</p>
 <div class="sourceCode" id="cb3"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb3-1"><a href="#cb3-1" aria-hidden="true" tabindex="-1"></a>GTFS_path <span class="ot">&lt;-</span> <span class="fu">file.path</span> (<span class="st">&quot;Z:&quot;</span>,</span>
@@ -287,17 +276,15 @@
 <span id="cb3-4"><a href="#cb3-4" aria-hidden="true" tabindex="-1"></a>                        <span class="st">&quot;Transit Resource Center (TRC)&quot;</span>,</span>
 <span id="cb3-5"><a href="#cb3-5" aria-hidden="true" tabindex="-1"></a>                        <span class="st">&quot;Data&quot;</span>,</span>
 <span id="cb3-6"><a href="#cb3-6" aria-hidden="true" tabindex="-1"></a>                        <span class="st">&quot;GTFS&quot;</span>)</span>
-<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a>Metrobus2022 <span class="ot">&lt;-</span> <span class="fu">read_gtfs</span>(<span class="fu">file.path</span>(GTFS_path, <span class="st">&quot;2022-04_WMATA.zip&quot;</span>))</span>
-<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>MetrobusStops <span class="ot">&lt;-</span> <span class="fu">stops_as_sf</span>(Metrobus2022<span class="sc">$</span>stops) <span class="sc">%&gt;%</span></span>
-<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_intersection</span>(., Nova) <span class="sc">%&gt;%</span></span>
-<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(stop_id) <span class="sc">%&gt;%</span></span>
-<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;WMATA&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">unite</span>(stop_id, Agency, <span class="at">col =</span> <span class="st">&quot;newstop_id&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">AgencyName =</span> <span class="st">&quot;WMATA&quot;</span>)</span>
+<span id="cb3-7"><a href="#cb3-7" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb3-8"><a href="#cb3-8" aria-hidden="true" tabindex="-1"></a>Metrobus2022 <span class="ot">&lt;-</span> <span class="fu">read_gtfs</span>(<span class="fu">file.path</span>(GTFS_path, <span class="st">&quot;2022-04_WMATA.zip&quot;</span>))</span>
+<span id="cb3-9"><a href="#cb3-9" aria-hidden="true" tabindex="-1"></a>MetrobusStops <span class="ot">&lt;-</span> <span class="fu">stops_as_sf</span>(Metrobus2022<span class="sc">$</span>stops) <span class="sc">%&gt;%</span></span>
+<span id="cb3-10"><a href="#cb3-10" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_intersection</span>(., Nova) <span class="sc">%&gt;%</span></span>
+<span id="cb3-11"><a href="#cb3-11" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(stop_id) <span class="sc">%&gt;%</span></span>
+<span id="cb3-12"><a href="#cb3-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;WMATA&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">unite</span>(stop_id, Agency, <span class="at">col =</span> <span class="st">&quot;newstop_id&quot;</span>, <span class="at">remove =</span> F)</span>
 <span id="cb3-13"><a href="#cb3-13" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a><span class="co">#joining agency stop data</span></span>
-<span id="cb3-16"><a href="#cb3-16" aria-hidden="true" tabindex="-1"></a><span class="co">#but RAIL will be joined later in the process!</span></span>
-<span id="cb3-17"><a href="#cb3-17" aria-hidden="true" tabindex="-1"></a>NovaStops_2022wmata <span class="ot">&lt;-</span> <span class="fu">rbind</span>(NovaStops_2022, MetrobusStops)</span></code></pre></div>
+<span id="cb3-14"><a href="#cb3-14" aria-hidden="true" tabindex="-1"></a><span class="co">#bind with the other nova agency stop data from above</span></span>
+<span id="cb3-15"><a href="#cb3-15" aria-hidden="true" tabindex="-1"></a>NovaStops_2022wmata <span class="ot">&lt;-</span> <span class="fu">rbind</span>(NovaStops_2022, MetrobusStops)</span></code></pre></div>
 </div>
 </div>
 <div id="creating-novastopsroutes" class="section level4">
@@ -417,205 +404,167 @@
 <p>Okay, we have set up everything we need for both the Access to Transit Service analysis and the Amount of Transit Service analysis. Let’s get going!</p>
 </div>
 </div>
-<div id="acccess-to-transit-for-real-this-time" class="section level3">
-<h3>Acccess to Transit (for real this time)</h3>
-<p>Time to do some analysis! We will use <code>st_interpolate_aw</code> to find who has access to transit at the route level. The following function takes a route and creates a 1/4 mile (for bus), 1/3 mile (for Metrorail) , or 1 mile (for commuter rail) buffer at each stop in that route. Then we interpolate the demographic data to within that buffered area, to find how much of different populations have access to transit.</p>
-<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>access2transitbus <span class="ot">&lt;-</span> <span class="cf">function</span>(route) {</span>
-<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#pull just the stops within a 1/4 mile radius of county</span></span>
-<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  BuffJoin <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(newroute_id <span class="sc">==</span> route) <span class="sc">%&gt;%</span></span>
-<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>()</span>
-<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS</span></span>
-<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#CensusJobs &lt;- st_join(Census, JobsbyBG)</span></span>
-<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate census data to these stops</span></span>
-<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>  TransitCensus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
-<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    CensusDataBG,</span>
-<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    BuffJoin,</span>
-<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">extensive =</span> T</span>
-<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(TransitCensus)</span>
-<span id="cb9-14"><a href="#cb9-14" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-15"><a href="#cb9-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-16"><a href="#cb9-16" aria-hidden="true" tabindex="-1"></a><span class="co">#1 mile for commuter rail</span></span>
-<span id="cb9-17"><a href="#cb9-17" aria-hidden="true" tabindex="-1"></a>access2transitvre <span class="ot">&lt;-</span> <span class="cf">function</span>(route) {</span>
-<span id="cb9-18"><a href="#cb9-18" aria-hidden="true" tabindex="-1"></a>  <span class="co">#pull just the stops within a 1/4 mile radius of county</span></span>
-<span id="cb9-19"><a href="#cb9-19" aria-hidden="true" tabindex="-1"></a>  BuffJoin <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(newroute_id <span class="sc">==</span> route) <span class="sc">%&gt;%</span></span>
-<span id="cb9-20"><a href="#cb9-20" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">1600</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>()</span>
-<span id="cb9-21"><a href="#cb9-21" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS</span></span>
-<span id="cb9-22"><a href="#cb9-22" aria-hidden="true" tabindex="-1"></a>  <span class="co">#CensusJobs &lt;- st_join(Census, JobsbyBG)</span></span>
-<span id="cb9-23"><a href="#cb9-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate census data to these stops</span></span>
-<span id="cb9-24"><a href="#cb9-24" aria-hidden="true" tabindex="-1"></a>  TransitCensus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
-<span id="cb9-25"><a href="#cb9-25" aria-hidden="true" tabindex="-1"></a>    CensusDataBG,</span>
-<span id="cb9-26"><a href="#cb9-26" aria-hidden="true" tabindex="-1"></a>    BuffJoin,</span>
-<span id="cb9-27"><a href="#cb9-27" aria-hidden="true" tabindex="-1"></a>    <span class="at">extensive =</span> T</span>
-<span id="cb9-28"><a href="#cb9-28" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb9-29"><a href="#cb9-29" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(TransitCensus)</span>
-<span id="cb9-30"><a href="#cb9-30" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb9-31"><a href="#cb9-31" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb9-32"><a href="#cb9-32" aria-hidden="true" tabindex="-1"></a><span class="co">#1/2 mile for heavy rail</span></span>
-<span id="cb9-33"><a href="#cb9-33" aria-hidden="true" tabindex="-1"></a>access2transitHR <span class="ot">&lt;-</span> <span class="cf">function</span>(route) {</span>
-<span id="cb9-34"><a href="#cb9-34" aria-hidden="true" tabindex="-1"></a>  <span class="co">#pull just the stops within a 1/4 mile radius of county</span></span>
-<span id="cb9-35"><a href="#cb9-35" aria-hidden="true" tabindex="-1"></a>  BuffJoin <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(newroute_id <span class="sc">==</span> route) <span class="sc">%&gt;%</span></span>
-<span id="cb9-36"><a href="#cb9-36" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">800</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>()</span>
-<span id="cb9-37"><a href="#cb9-37" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS</span></span>
-<span id="cb9-38"><a href="#cb9-38" aria-hidden="true" tabindex="-1"></a>  <span class="co">#CensusJobs &lt;- st_join(Census, JobsbyBG)</span></span>
-<span id="cb9-39"><a href="#cb9-39" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate census data to these stops</span></span>
-<span id="cb9-40"><a href="#cb9-40" aria-hidden="true" tabindex="-1"></a>  TransitCensus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
-<span id="cb9-41"><a href="#cb9-41" aria-hidden="true" tabindex="-1"></a>    CensusDataBG,</span>
-<span id="cb9-42"><a href="#cb9-42" aria-hidden="true" tabindex="-1"></a>    BuffJoin,</span>
-<span id="cb9-43"><a href="#cb9-43" aria-hidden="true" tabindex="-1"></a>    <span class="at">extensive =</span> T</span>
-<span id="cb9-44"><a href="#cb9-44" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb9-45"><a href="#cb9-45" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(TransitCensus)</span>
-<span id="cb9-46"><a href="#cb9-46" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>This function only find the interpolated demographic data for one route. To find this for each route, we use <code>lapply</code> to loop through every route in our file and run the function.</p>
-<p>Because of the difference in radii for commuter rail and bus, we run these separately and then combine them at the end.</p>
-<p>We are not including WMATA (Metrorail or Metrobus) in the access to transit analysis. So before we get started, we remove WMATA data from our <code>NovaStopsRoutes</code> file. Also, the interpolation doens’t like non-numeric data, so we remove the GEOID from <code>CensusDataTracts</code>.</p>
-<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a><span class="co">#list of all routes for ART, DASH, CUE, FFX, LCT, VRE</span></span>
-<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>NovaStopsRoutes_NOWMATA <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(AgencyName <span class="sc">!=</span> <span class="st">&quot;WMATA&quot;</span>)</span>
-<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>CensusDataTracts <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">&quot;AgencyProfileData/CensusDataTracts.shp&quot;</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span></span>
-<span id="cb10-7"><a href="#cb10-7" aria-hidden="true" tabindex="-1"></a>  <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
-<span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-9"><a href="#cb10-9" aria-hidden="true" tabindex="-1"></a>routes <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(newroute_id, AgencyName, Mode, rte_id) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb10-10"><a href="#cb10-10" aria-hidden="true" tabindex="-1"></a><span class="fu">st_write</span>(routes, <span class="st">&quot;AgencyProfileData/routes.csv&quot;</span>)</span>
-<span id="cb10-11"><a href="#cb10-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-12"><a href="#cb10-12" aria-hidden="true" tabindex="-1"></a>busroutes <span class="ot">&lt;-</span> routes <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> <span class="st">&quot;Bus&quot;</span>)</span>
-<span id="cb10-13"><a href="#cb10-13" aria-hidden="true" tabindex="-1"></a>crroutes <span class="ot">&lt;-</span> routes <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> <span class="st">&quot;CR&quot;</span>)</span>
-<span id="cb10-14"><a href="#cb10-14" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-15"><a href="#cb10-15" aria-hidden="true" tabindex="-1"></a><span class="co">#loop through all nova routes to find access to transit at route level</span></span>
-<span id="cb10-16"><a href="#cb10-16" aria-hidden="true" tabindex="-1"></a><span class="co">#do bus and rail separately (since they have different buffer radii), then combine</span></span>
-<span id="cb10-17"><a href="#cb10-17" aria-hidden="true" tabindex="-1"></a>NovaAccessTransit_Bus <span class="ot">&lt;-</span> <span class="fu">lapply</span>(busroutes<span class="sc">$</span>newroute_id, access2transitbus) <span class="sc">%&gt;%</span></span>
-<span id="cb10-18"><a href="#cb10-18" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind.data.frame, .) <span class="sc">%&gt;%</span> <span class="fu">cbind</span>(busroutes, .)</span>
-<span id="cb10-19"><a href="#cb10-19" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-20"><a href="#cb10-20" aria-hidden="true" tabindex="-1"></a>NovaAccessTransit_VRE <span class="ot">&lt;-</span> <span class="fu">lapply</span>(crroutes<span class="sc">$</span>newroute_id, access2transitvre) <span class="sc">%&gt;%</span></span>
-<span id="cb10-21"><a href="#cb10-21" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind.data.frame, .) <span class="sc">%&gt;%</span> <span class="fu">cbind</span>(crroutes, .)</span>
-<span id="cb10-22"><a href="#cb10-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb10-23"><a href="#cb10-23" aria-hidden="true" tabindex="-1"></a><span class="co">#combine</span></span>
-<span id="cb10-24"><a href="#cb10-24" aria-hidden="true" tabindex="-1"></a>NovaAccessTransit <span class="ot">&lt;-</span> <span class="fu">rbind</span>(NovaAccessTransit_VRE, NovaAccessTransit_Bus)</span></code></pre></div>
-<p>So we looked at the route-level access to transit. We can also look at this at an agency level. To do that, we just alter the function a bit and run through each agency (except WMATA).</p>
-<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a>access2transitagency <span class="ot">&lt;-</span> <span class="cf">function</span>(agency, buffer) {</span>
-<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>  <span class="co">#pull just the stops within a 1/4 mile radius of county</span></span>
-<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  BuffJoin <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(AgencyName <span class="sc">==</span> agency) <span class="sc">%&gt;%</span></span>
-<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> buffer) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>()</span>
-<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS</span></span>
-<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#CensusJobs &lt;- st_join(Census, JobsbyBG)</span></span>
-<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate census data to these stops</span></span>
-<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>  TransitCensus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
-<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>    CensusDataTracts,</span>
-<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>    BuffJoin,</span>
-<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="at">extensive =</span> T</span>
-<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(TransitCensus)</span>
-<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>}</span>
-<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>ART <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;ART&quot;</span>, <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;ART&quot;</span>)</span>
-<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>CUE <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;CUE&quot;</span>, <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;CUE&quot;</span>)</span>
-<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>DASH <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;DASH&quot;</span>, <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;DASH&quot;</span>)</span>
-<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>FFX <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;FFX&quot;</span>, <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;FFX&quot;</span>)</span>
-<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>LCT <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;LCT&quot;</span>, <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;LCT&quot;</span>)</span>
-<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>VRE <span class="ot">&lt;-</span> <span class="fu">access2transitagency</span>(<span class="st">&quot;VRE&quot;</span>, <span class="dv">1600</span>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Agency =</span> <span class="st">&quot;VRE&quot;</span>)</span>
-<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>NovaAccessTransitbyAgency <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ART,CUE,DASH,FFX,LCT,VRE)</span></code></pre></div>
+<div id="access-to-transit" class="section level2">
+<h2>Access to Transit</h2>
+<div id="by-jurisidction" class="section level4">
+<h4>by Jurisidction</h4>
+<p>Time to do some analysis! We will use <code>st_interpolate_aw</code> to find who has access to transit in each jurisdiction. The following function takes all the stops in a route and creates a buffer. We then interpolate the demographic data within that buffered area to find how much access to transit different populations have.</p>
+<table>
+<caption>Buffers for Access to Transit</caption>
+<thead>
+<tr class="header">
+<th align="left">Mode</th>
+<th align="left">BufferMiles</th>
+<th align="right">BufferMeters</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td align="left">Bus</td>
+<td align="left">1/4</td>
+<td align="right">400</td>
+</tr>
+<tr class="even">
+<td align="left">Heavy Rail</td>
+<td align="left">1/2</td>
+<td align="right">800</td>
+</tr>
+<tr class="odd">
+<td align="left">Paratransit</td>
+<td align="left">3/4</td>
+<td align="right">1200</td>
+</tr>
+<tr class="even">
+<td align="left">Commuter Rail</td>
+<td align="left">1</td>
+<td align="right">1600</td>
+</tr>
+</tbody>
+</table>
+<div class="sourceCode" id="cb9"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb9-1"><a href="#cb9-1" aria-hidden="true" tabindex="-1"></a>access2transit <span class="ot">&lt;-</span> <span class="cf">function</span>(Mode, buff, Census) {</span>
+<span id="cb9-2"><a href="#cb9-2" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-3"><a href="#cb9-3" aria-hidden="true" tabindex="-1"></a>  BuffJoin <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> Mode) <span class="sc">%&gt;%</span></span>
+<span id="cb9-4"><a href="#cb9-4" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> buff) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>()</span>
+<span id="cb9-5"><a href="#cb9-5" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb9-6"><a href="#cb9-6" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate census data to these stops</span></span>
+<span id="cb9-7"><a href="#cb9-7" aria-hidden="true" tabindex="-1"></a>  TransitCensus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
+<span id="cb9-8"><a href="#cb9-8" aria-hidden="true" tabindex="-1"></a>    Census,</span>
+<span id="cb9-9"><a href="#cb9-9" aria-hidden="true" tabindex="-1"></a>    BuffJoin,</span>
+<span id="cb9-10"><a href="#cb9-10" aria-hidden="true" tabindex="-1"></a>    <span class="at">extensive =</span> T</span>
+<span id="cb9-11"><a href="#cb9-11" aria-hidden="true" tabindex="-1"></a>  ) <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
+<span id="cb9-12"><a href="#cb9-12" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(TransitCensus)</span>
+<span id="cb9-13"><a href="#cb9-13" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<p>We will split up analysis by mode and jurisdiction. But first, let’s create polygons for each NVTC jurisdiction.</p>
+<div class="sourceCode" id="cb10"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb10-1"><a href="#cb10-1" aria-hidden="true" tabindex="-1"></a>Arl <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Arlington&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
+<span id="cb10-2"><a href="#cb10-2" aria-hidden="true" tabindex="-1"></a>Alx <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Alexandria city&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
+<span id="cb10-3"><a href="#cb10-3" aria-hidden="true" tabindex="-1"></a>CityFFX <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Fairfax city&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
+<span id="cb10-4"><a href="#cb10-4" aria-hidden="true" tabindex="-1"></a>Lou <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Loudoun&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
+<span id="cb10-5"><a href="#cb10-5" aria-hidden="true" tabindex="-1"></a>fc <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Falls Church city&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span>
+<span id="cb10-6"><a href="#cb10-6" aria-hidden="true" tabindex="-1"></a>ffx <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(<span class="st">&quot;Fairfax County&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>) <span class="sc">%&gt;%</span> <span class="fu">select</span>(<span class="sc">-</span>GEOID)</span></code></pre></div>
+<div class="sourceCode" id="cb11"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb11-1"><a href="#cb11-1" aria-hidden="true" tabindex="-1"></a><span class="co">#arlington</span></span>
+<span id="cb11-2"><a href="#cb11-2" aria-hidden="true" tabindex="-1"></a>ARlCR <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
+<span id="cb11-3"><a href="#cb11-3" aria-hidden="true" tabindex="-1"></a>  Arl,</span>
+<span id="cb11-4"><a href="#cb11-4" aria-hidden="true" tabindex="-1"></a>  NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> <span class="st">&quot;CR&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-5"><a href="#cb11-5" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">1600</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>(),</span>
+<span id="cb11-6"><a href="#cb11-6" aria-hidden="true" tabindex="-1"></a>  <span class="at">extensive =</span> T</span>
+<span id="cb11-7"><a href="#cb11-7" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Mode =</span> <span class="st">&quot;CR&quot;</span>)</span>
+<span id="cb11-8"><a href="#cb11-8" aria-hidden="true" tabindex="-1"></a>ARlBus <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
+<span id="cb11-9"><a href="#cb11-9" aria-hidden="true" tabindex="-1"></a>  Arl,</span>
+<span id="cb11-10"><a href="#cb11-10" aria-hidden="true" tabindex="-1"></a>  NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> <span class="st">&quot;Bus&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-11"><a href="#cb11-11" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">400</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>(),</span>
+<span id="cb11-12"><a href="#cb11-12" aria-hidden="true" tabindex="-1"></a>  <span class="at">extensive =</span> T</span>
+<span id="cb11-13"><a href="#cb11-13" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Mode =</span> <span class="st">&quot;Bus&quot;</span>)</span>
+<span id="cb11-14"><a href="#cb11-14" aria-hidden="true" tabindex="-1"></a>ARlHR <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
+<span id="cb11-15"><a href="#cb11-15" aria-hidden="true" tabindex="-1"></a>  Arl,</span>
+<span id="cb11-16"><a href="#cb11-16" aria-hidden="true" tabindex="-1"></a>  NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(Mode <span class="sc">==</span> <span class="st">&quot;HR&quot;</span>) <span class="sc">%&gt;%</span></span>
+<span id="cb11-17"><a href="#cb11-17" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">800</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>(),</span>
+<span id="cb11-18"><a href="#cb11-18" aria-hidden="true" tabindex="-1"></a>  <span class="at">extensive =</span> T</span>
+<span id="cb11-19"><a href="#cb11-19" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Mode =</span> <span class="st">&quot;HR&quot;</span>)</span>
+<span id="cb11-20"><a href="#cb11-20" aria-hidden="true" tabindex="-1"></a>ARlpara <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(</span>
+<span id="cb11-21"><a href="#cb11-21" aria-hidden="true" tabindex="-1"></a>  Arl,</span>
+<span id="cb11-22"><a href="#cb11-22" aria-hidden="true" tabindex="-1"></a>  NovaStopsRoutes_2022 <span class="sc">%&gt;%</span></span>
+<span id="cb11-23"><a href="#cb11-23" aria-hidden="true" tabindex="-1"></a>    <span class="fu">st_buffer</span>(<span class="at">dist =</span> <span class="dv">1200</span>) <span class="sc">%&gt;%</span> <span class="fu">st_union</span>() <span class="sc">%&gt;%</span> <span class="fu">st_make_valid</span>(),</span>
+<span id="cb11-24"><a href="#cb11-24" aria-hidden="true" tabindex="-1"></a>  <span class="at">extensive =</span> T</span>
+<span id="cb11-25"><a href="#cb11-25" aria-hidden="true" tabindex="-1"></a>) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Mode =</span> <span class="st">&quot;Paratransit&quot;</span>)</span>
+<span id="cb11-26"><a href="#cb11-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb11-27"><a href="#cb11-27" aria-hidden="true" tabindex="-1"></a>ArlAccess <span class="ot">&lt;-</span> <span class="fu">rbind</span>(ARlBus, ARlHR, ARlCR, ARlpara) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">Jurisdiction =</span> <span class="st">&quot;Arlington County&quot;</span>)</span></code></pre></div>
+<p>Now repeat that same analysis for each jurisdiction. I won’t include all the code here to save space, but all you have to do is replace the first input of the <code>st_interpolate_aw</code> (in this case, <code>Arl</code>) with the relevant county or city.</p>
+<p>Let’s combine all those variables and then you’re done!</p>
+<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>NovaAcessJurisdictions <span class="ot">&lt;-</span> <span class="fu">rbind</span>(LouAccess,</span>
+<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a>                                ArlAccess,</span>
+<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a>                                AlxAccess,</span>
+<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>                                ffxAccess,</span>
+<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>                                CityFFXAccess,</span>
+<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>                                fcAccess)</span></code></pre></div>
+<p>In the agency profiles, we show percentages. The denominators of those ratios are created in the next line of code.</p>
+<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>NovaCensus <span class="ot">&lt;-</span> <span class="fu">rbind</span>(Arl <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()<span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;Arlington&quot;</span>),</span>
+<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a>                    Alx <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()<span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;Alexandria&quot;</span>),</span>
+<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a>                    Lou <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>() <span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;Loudoun&quot;</span>),</span>
+<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a>                    ffx <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()<span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;Fairfax&quot;</span>),</span>
+<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>                    fc <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()<span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;Falls Church&quot;</span>),</span>
+<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>                    CityFFX <span class="sc">%&gt;%</span> <span class="fu">st_drop_geometry</span>()<span class="sc">%&gt;%</span> <span class="fu">summarize_all</span>(sum) <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">County =</span> <span class="st">&quot;CityFairfax&quot;</span>))</span></code></pre></div>
 </div>
 </div>
-<div id="amount-of-service" class="section level2 tabset">
-<h2 class="tabset">Amount of Service</h2>
+<div id="amount-of-service" class="section level2">
+<h2>Amount of Service</h2>
 <p>Now it’s time for some amount of service analysis. Instead of looking at who has access to transit, we look at how <em>much</em> service each census tract by using the TSI, as mentioned above. Let’s get going!</p>
-<div id="by-route" class="section level3">
-<h3>by Route</h3>
-<p>We run this analysis at the route level first . Unlike access to transit, the amount of service analysis is additive. So we’ll run it at the route level and be able to add up all the service for each GEOID (Census Tract).</p>
-<div class="sourceCode" id="cb12"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb12-1"><a href="#cb12-1" aria-hidden="true" tabindex="-1"></a>CensusDataTracts <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">&quot;AgencyProfileData/CensusDataTracts.shp&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
-<span id="cb12-2"><a href="#cb12-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="co"># Using Census Tracts</span></span>
-<span id="cb12-4"><a href="#cb12-4" aria-hidden="true" tabindex="-1"></a>amount_serviceROUTE <span class="ot">&lt;-</span> <span class="cf">function</span>(newroute_id){</span>
-<span id="cb12-5"><a href="#cb12-5" aria-hidden="true" tabindex="-1"></a>  <span class="co">#create county shape and transform</span></span>
-<span id="cb12-6"><a href="#cb12-6" aria-hidden="true" tabindex="-1"></a>  CountyShp <span class="ot">&lt;-</span> CensusDataTracts <span class="sc">%&gt;%</span> <span class="fu">select</span>(GEOID) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
-<span id="cb12-7"><a href="#cb12-7" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-8"><a href="#cb12-8" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summarize stop frequency at the route level</span></span>
-<span id="cb12-9"><a href="#cb12-9" aria-hidden="true" tabindex="-1"></a>  Ag_County <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(newroute_id <span class="sc">==</span> newrt_d) <span class="sc">%&gt;%</span></span>
-<span id="cb12-10"><a href="#cb12-10" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(newrt_d, Mode) <span class="sc">%&gt;%</span> <span class="fu">summarize</span>(<span class="at">stopfreq =</span> <span class="fu">mean</span>(tripfrq))</span>
-<span id="cb12-11"><a href="#cb12-11" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-12"><a href="#cb12-12" aria-hidden="true" tabindex="-1"></a>  <span class="co">#buffer the stops, conditional if its a commuter rail (1 mile radius) or bus (1/4 mi)</span></span>
-<span id="cb12-13"><a href="#cb12-13" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_County <span class="sc">%&gt;%</span> <span class="fu">st_buffer</span>(., <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;CR&quot;</span>, <span class="dv">1600</span>,</span>
-<span id="cb12-14"><a href="#cb12-14" aria-hidden="true" tabindex="-1"></a>                                                     <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;HR&quot;</span>, <span class="dv">800</span>,<span class="dv">400</span>))) <span class="sc">%&gt;%</span></span>
-<span id="cb12-15"><a href="#cb12-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(.))</span>
-<span id="cb12-16"><a href="#cb12-16" aria-hidden="true" tabindex="-1"></a>  <span class="co">#set units to square miles</span></span>
-<span id="cb12-17"><a href="#cb12-17" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-18"><a href="#cb12-18" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(Ag_CountyBuff<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb12-19"><a href="#cb12-19" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate area times stop frequency</span></span>
-<span id="cb12-20"><a href="#cb12-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">#select only numeric values for interpolation</span></span>
-<span id="cb12-21"><a href="#cb12-21" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_CountyBuff <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">calcTSI =</span> area<span class="sc">*</span>stopfreq) <span class="sc">%&gt;%</span> <span class="fu">select</span>(calcTSI)</span>
-<span id="cb12-22"><a href="#cb12-22" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-23"><a href="#cb12-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate &quot;TSI&quot; for each census block group</span></span>
-<span id="cb12-24"><a href="#cb12-24" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(Ag_CountyBuff, CountyShp, <span class="at">extensive =</span> T) <span class="sc">%&gt;%</span></span>
-<span id="cb12-25"><a href="#cb12-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(.))</span>
-<span id="cb12-26"><a href="#cb12-26" aria-hidden="true" tabindex="-1"></a>  CountyInterpol<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(CountyInterpol<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb12-27"><a href="#cb12-27" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-28"><a href="#cb12-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-29"><a href="#cb12-29" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate TSI</span></span>
-<span id="cb12-30"><a href="#cb12-30" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> CountyInterpol <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">TSI =</span> calcTSI<span class="sc">/</span>area) <span class="sc">%&gt;%</span> <span class="fu">select</span>(TSI, area)</span>
-<span id="cb12-31"><a href="#cb12-31" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join with census data to have associated GEOIDs</span></span>
-<span id="cb12-32"><a href="#cb12-32" aria-hidden="true" tabindex="-1"></a>  AmountService <span class="ot">&lt;-</span> <span class="fu">st_join</span>(CountyInterpol, CountyShp, <span class="at">join =</span> st_equals) <span class="sc">%&gt;%</span></span>
-<span id="cb12-33"><a href="#cb12-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">newroute_id =</span> newroute_id)</span>
-<span id="cb12-34"><a href="#cb12-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb12-35"><a href="#cb12-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(AmountService)</span>
-<span id="cb12-36"><a href="#cb12-36" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
+<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a><span class="co"># Using Census Tracts for NVTC and PRTC jurisdictions</span></span>
+<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a>NOVA_Plus <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">&quot;Arlington&quot;</span>,</span>
+<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Fairfax County&quot;</span>,</span>
+<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Fairfax city&quot;</span>,</span>
+<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Loudoun&quot;</span>,</span>
+<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Alexandria City&quot;</span>,</span>
+<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Falls Church City&quot;</span>,</span>
+<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Prince William County&quot;</span>,</span>
+<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Stafford County&quot;</span>,</span>
+<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Spotsylvania County&quot;</span>,</span>
+<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Fredericksburg City&quot;</span>,</span>
+<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Manassas City&quot;</span>,</span>
+<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>               <span class="st">&quot;Manassas Park City&quot;</span>)</span>
+<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>CensusDataTracts <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(NOVA_Plus) <span class="sc">%&gt;%</span></span>
+<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
+<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>amount_service <span class="ot">&lt;-</span> <span class="cf">function</span>(newroute_id){</span>
+<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  <span class="fu">message</span>(newroute_id)</span>
+<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">#create county shape and transform</span></span>
+<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  CountyShp <span class="ot">&lt;-</span> CensusDataTracts <span class="sc">%&gt;%</span> <span class="fu">select</span>(GEOID)</span>
+<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summarize stop frequency at the route level</span></span>
+<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  Ag_County <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(newrt_d <span class="sc">==</span> newroute_id) <span class="sc">%&gt;%</span></span>
+<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(newrt_d, Mode) <span class="sc">%&gt;%</span> <span class="fu">summarize</span>(<span class="at">stopfreq =</span> <span class="fu">mean</span>(tripfrq))</span>
+<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  <span class="co">#buffer the stops, conditional if its a commuter rail (1 mile radius) or bus (1/4 mi)</span></span>
+<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_County <span class="sc">%&gt;%</span> <span class="fu">st_buffer</span>(., <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;CR&quot;</span>, <span class="dv">1600</span>,</span>
+<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>                                                     <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;HR&quot;</span>, <span class="dv">800</span>,<span class="dv">400</span>))) <span class="sc">%&gt;%</span></span>
+<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(geometry))</span>
+<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="co">#set units to square miles</span></span>
+<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(Ag_CountyBuff<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate area times stop frequency</span></span>
+<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>  <span class="co">#select only numeric values for interpolation</span></span>
+<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_CountyBuff <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">calcTSI =</span> area<span class="sc">*</span>stopfreq) <span class="sc">%&gt;%</span> <span class="fu">select</span>(calcTSI)</span>
+<span id="cb14-37"><a href="#cb14-37" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-38"><a href="#cb14-38" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate &quot;TSI&quot; for each census block group</span></span>
+<span id="cb14-39"><a href="#cb14-39" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(Ag_CountyBuff, CountyShp, <span class="at">extensive =</span> T) <span class="sc">%&gt;%</span></span>
+<span id="cb14-40"><a href="#cb14-40" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(.))</span>
+<span id="cb14-41"><a href="#cb14-41" aria-hidden="true" tabindex="-1"></a>  CountyInterpol<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(CountyInterpol<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
+<span id="cb14-42"><a href="#cb14-42" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-43"><a href="#cb14-43" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate TSI</span></span>
+<span id="cb14-44"><a href="#cb14-44" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> CountyInterpol <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">TSI =</span> calcTSI<span class="sc">/</span>area) <span class="sc">%&gt;%</span> <span class="fu">select</span>(TSI, area)</span>
+<span id="cb14-45"><a href="#cb14-45" aria-hidden="true" tabindex="-1"></a></span>
+<span id="cb14-46"><a href="#cb14-46" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join with census data to have associated GEOIDs</span></span>
+<span id="cb14-47"><a href="#cb14-47" aria-hidden="true" tabindex="-1"></a>  AmountService <span class="ot">&lt;-</span> <span class="fu">st_join</span>(CountyInterpol, CountyShp, <span class="at">join =</span> st_equals) <span class="sc">%&gt;%</span></span>
+<span id="cb14-48"><a href="#cb14-48" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">newroute_id =</span> newroute_id)</span>
+<span id="cb14-49"><a href="#cb14-49" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(AmountService)</span>
+<span id="cb14-50"><a href="#cb14-50" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
 <p>Since it’s route level and we don’t want to run like 200 different functions manually, we’ll use <code>lapply</code> like we did before.</p>
-<div class="sourceCode" id="cb13"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb13-1"><a href="#cb13-1" aria-hidden="true" tabindex="-1"></a>routes <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(newrt_d, AgncyNm, Mode) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
-<span id="cb13-2"><a href="#cb13-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-3"><a href="#cb13-3" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb13-4"><a href="#cb13-4" aria-hidden="true" tabindex="-1"></a><span class="co">#run loop through all routes</span></span>
-<span id="cb13-5"><a href="#cb13-5" aria-hidden="true" tabindex="-1"></a>nova_amountROUTE <span class="ot">&lt;-</span> <span class="fu">lapply</span>(routes<span class="sc">$</span>newrt_d, amount_serviceROUTE) <span class="sc">%&gt;%</span></span>
-<span id="cb13-6"><a href="#cb13-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind.data.frame, .)</span></code></pre></div>
-</div>
-<div id="by-agency" class="section level3">
-<h3>by Agency</h3>
-<p>Now we run it for the entire agency. We’ll have to tweak the <code>amount_service</code> function, since we no longer need to iterate through each route.</p>
-<div class="sourceCode" id="cb14"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb14-1"><a href="#cb14-1" aria-hidden="true" tabindex="-1"></a>CensusDataTracts <span class="ot">&lt;-</span> <span class="fu">st_read</span>(<span class="st">&quot;AgencyProfileData/CensusDataTracts.shp&quot;</span>) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
-<span id="cb14-2"><a href="#cb14-2" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-3"><a href="#cb14-3" aria-hidden="true" tabindex="-1"></a>amount_serviceAGENCY <span class="ot">&lt;-</span> <span class="cf">function</span>(Agency){</span>
-<span id="cb14-4"><a href="#cb14-4" aria-hidden="true" tabindex="-1"></a>  <span class="co">#create county shape and transform</span></span>
-<span id="cb14-5"><a href="#cb14-5" aria-hidden="true" tabindex="-1"></a>  CountyShp <span class="ot">&lt;-</span> CensusDataTracts <span class="sc">%&gt;%</span> <span class="fu">select</span>(GEOID) <span class="sc">%&gt;%</span> <span class="fu">st_transform</span>(<span class="at">crs =</span> <span class="dv">4326</span>)</span>
-<span id="cb14-6"><a href="#cb14-6" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-7"><a href="#cb14-7" aria-hidden="true" tabindex="-1"></a>  <span class="co">#summarize stop frequency at the agency level</span></span>
-<span id="cb14-8"><a href="#cb14-8" aria-hidden="true" tabindex="-1"></a>  Ag_County <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">filter</span>(AgncyNm <span class="sc">==</span> Agency) <span class="sc">%&gt;%</span></span>
-<span id="cb14-9"><a href="#cb14-9" aria-hidden="true" tabindex="-1"></a>    <span class="fu">group_by</span>(newrt_d, Mode) <span class="sc">%&gt;%</span> <span class="fu">summarize</span>(<span class="at">stopfreq =</span> <span class="fu">mean</span>(tripfrq))</span>
-<span id="cb14-10"><a href="#cb14-10" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-11"><a href="#cb14-11" aria-hidden="true" tabindex="-1"></a>  <span class="co">#buffer the stops, conditional if its a commuter rail (1 mile radius) or bus (1/4 mi)</span></span>
-<span id="cb14-12"><a href="#cb14-12" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_County <span class="sc">%&gt;%</span> <span class="fu">st_buffer</span>(., <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;CR&quot;</span>, <span class="dv">1600</span>,</span>
-<span id="cb14-13"><a href="#cb14-13" aria-hidden="true" tabindex="-1"></a>                                                     <span class="fu">ifelse</span>(.<span class="sc">$</span>Mode <span class="sc">==</span> <span class="st">&quot;HR&quot;</span>, <span class="dv">800</span>,</span>
-<span id="cb14-14"><a href="#cb14-14" aria-hidden="true" tabindex="-1"></a>                                                            <span class="dv">400</span>))) <span class="sc">%&gt;%</span> </span>
-<span id="cb14-15"><a href="#cb14-15" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(geometry))</span>
-<span id="cb14-16"><a href="#cb14-16" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-17"><a href="#cb14-17" aria-hidden="true" tabindex="-1"></a>  <span class="co">#set units to square miles</span></span>
-<span id="cb14-18"><a href="#cb14-18" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(Ag_CountyBuff<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb14-19"><a href="#cb14-19" aria-hidden="true" tabindex="-1"></a>  </span>
-<span id="cb14-20"><a href="#cb14-20" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate area times stop frequency</span></span>
-<span id="cb14-21"><a href="#cb14-21" aria-hidden="true" tabindex="-1"></a>  <span class="co">#select only numeric values for interpolation</span></span>
-<span id="cb14-22"><a href="#cb14-22" aria-hidden="true" tabindex="-1"></a>  Ag_CountyBuff <span class="ot">&lt;-</span> Ag_CountyBuff <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">calcTSI =</span> area<span class="sc">*</span>stopfreq) <span class="sc">%&gt;%</span> <span class="fu">select</span>(calcTSI)</span>
-<span id="cb14-23"><a href="#cb14-23" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-24"><a href="#cb14-24" aria-hidden="true" tabindex="-1"></a>  <span class="co">#interpolate &quot;TSI&quot; for each census block group</span></span>
-<span id="cb14-25"><a href="#cb14-25" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> <span class="fu">st_interpolate_aw</span>(Ag_CountyBuff, CountyShp, <span class="at">extensive =</span> T) <span class="sc">%&gt;%</span></span>
-<span id="cb14-26"><a href="#cb14-26" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">area =</span> <span class="fu">st_area</span>(.))</span>
-<span id="cb14-27"><a href="#cb14-27" aria-hidden="true" tabindex="-1"></a>  CountyInterpol<span class="sc">$</span>area <span class="ot">&lt;-</span> <span class="fu">set_units</span>(CountyInterpol<span class="sc">$</span>area, mi<span class="sc">^</span><span class="dv">2</span>)</span>
-<span id="cb14-28"><a href="#cb14-28" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-29"><a href="#cb14-29" aria-hidden="true" tabindex="-1"></a>  <span class="co">#calculate TSI</span></span>
-<span id="cb14-30"><a href="#cb14-30" aria-hidden="true" tabindex="-1"></a>  CountyInterpol <span class="ot">&lt;-</span> CountyInterpol <span class="sc">%&gt;%</span> <span class="fu">mutate</span>(<span class="at">TSI =</span> calcTSI<span class="sc">/</span>area) <span class="sc">%&gt;%</span> <span class="fu">select</span>(TSI, area)</span>
-<span id="cb14-31"><a href="#cb14-31" aria-hidden="true" tabindex="-1"></a>  <span class="co">#join with census data to have associated GEOIDs</span></span>
-<span id="cb14-32"><a href="#cb14-32" aria-hidden="true" tabindex="-1"></a>  AmountService <span class="ot">&lt;-</span> <span class="fu">st_join</span>(CountyInterpol, CountyShp, <span class="at">join =</span> st_equals) <span class="sc">%&gt;%</span></span>
-<span id="cb14-33"><a href="#cb14-33" aria-hidden="true" tabindex="-1"></a>    <span class="fu">mutate</span>(<span class="at">Agency =</span> Agency)</span>
-<span id="cb14-34"><a href="#cb14-34" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb14-35"><a href="#cb14-35" aria-hidden="true" tabindex="-1"></a>  <span class="fu">return</span>(AmountService)</span>
-<span id="cb14-36"><a href="#cb14-36" aria-hidden="true" tabindex="-1"></a>}</span></code></pre></div>
-<p>We can loop through a list of the agencies to make this easier, just like when we did it by routes.</p>
-<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>agencies <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(AgncyNm, Mode) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
+<div class="sourceCode" id="cb15"><pre class="sourceCode r"><code class="sourceCode r"><span id="cb15-1"><a href="#cb15-1" aria-hidden="true" tabindex="-1"></a>routes <span class="ot">&lt;-</span> NovaStopsRoutes_2022 <span class="sc">%&gt;%</span> <span class="fu">distinct</span>(newrt_d, AgncyNm, Mode) <span class="sc">%&gt;%</span> <span class="fu">as.data.frame</span>()</span>
 <span id="cb15-2"><a href="#cb15-2" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-3"><a href="#cb15-3" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb15-4"><a href="#cb15-4" aria-hidden="true" tabindex="-1"></a><span class="co">#run loop through all routes</span></span>
-<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>nova_amountAGENCY <span class="ot">&lt;-</span> <span class="fu">lapply</span>(agencies<span class="sc">$</span>AgncyNm, amount_serviceAGENCY) <span class="sc">%&gt;%</span></span>
+<span id="cb15-5"><a href="#cb15-5" aria-hidden="true" tabindex="-1"></a>nova_amountROUTE <span class="ot">&lt;-</span> <span class="fu">lapply</span>(routes<span class="sc">$</span>newrt_d, amount_serviceROUTE) <span class="sc">%&gt;%</span></span>
 <span id="cb15-6"><a href="#cb15-6" aria-hidden="true" tabindex="-1"></a>  <span class="fu">do.call</span>(rbind.data.frame, .)</span></code></pre></div>
-</div>
 </div>
 <div id="census" class="section level2">
 <h2>Census</h2>
@@ -665,6 +614,10 @@
 <span id="cb17-5"><a href="#cb17-5" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Alexandria City&quot;</span>,</span>
 <span id="cb17-6"><a href="#cb17-6" aria-hidden="true" tabindex="-1"></a>                    <span class="st">&quot;Falls Church City&quot;</span>)</span>
 <span id="cb17-7"><a href="#cb17-7" aria-hidden="true" tabindex="-1"></a>CensusDataTracts <span class="ot">&lt;-</span> <span class="fu">countycensus_tract</span>(NOVA_Counties)</span></code></pre></div>
+</div>
+<div id="service" class="section level2">
+<h2>Service</h2>
+<p><strong>Sophie is going to work on adding R code for the Service section, so ignore this section for now!</strong></p>
 </div>
 </div>
 
