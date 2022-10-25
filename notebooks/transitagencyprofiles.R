@@ -413,164 +413,195 @@ access2transit <- function(Mode, buff, Census) {
 #para = 3/4 mile (1200m)
 #cr = 1 mile (1600m)
 
-#bus
-ARLaccess <- access2transit("Bus", 400, Arl)
-ALXaccess <- access2transit("Bus", 400, Alx)
-CityFFXaccess <- access2transit("Bus", 400, CityFFX)
-LOUaccess <- access2transit("Bus", 400, Lou)
-st_write(LOUaccess, "AgencyProfileData/Louaccess.xlsx")
-fcaccess <- access2transit("Bus", 400, fc)
-st_write(fcaccess, "AgencyProfileData/fcaccess.xlsx")
-ffxaccess <- access2transit("Bus", 400, ffx)
-st_write(ffxaccess, "AgencyProfileData/ffxaccess.xlsx")
+#arlington
+ARlCR <- st_interpolate_aw(
+  Arl,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "CR")
+ARlBus <- st_interpolate_aw(
+  Arl,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Bus")
+ARlHR <- st_interpolate_aw(
+  Arl,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+ARlpara <- st_interpolate_aw(
+  Arl,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Paratransit")
 
-#heavy rail
-ARlHR <- access2transit("HR", 800, Arl)
-st_write(ARlHR, "AgencyProfileData/ArlAccess.xlsx", append = T)
-AlxHR <- access2transit("HR", 800, Alx)
-st_write(AlxHR, "AgencyProfileData/AlxAccess.xlsx", append = T)
-CityFFXHR <- access2transit("HR", 800, CityFFX)
-st_write(CityFFXHR, "AgencyProfileData/CityFFXAccess.xlsx", append = T)
-LouHR <- access2transit("HR", 800, Lou)
-st_write(LouHR, "AgencyProfileData/Louaccess.xlsx", append = T)
-fcHR <- access2transit("HR", 800, fc)
-st_write(fcHR, "AgencyProfileData/fcaccess.xlsx", append = T)
-ffxHR <- access2transit("HR", 800, ffx)
-st_write(ffxHR, "AgencyProfileData/ffxaccess.xlsx", append =T)
+ArlAccess <- rbind(ARlBus, ARlHR, ARlCR, ARlpara) %>% mutate(Jurisdiction = "Arlington County")
+#falls church
+fcCR <- st_interpolate_aw(
+  fc,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+)
+fcHR <- st_interpolate_aw(
+  fc,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+)
+fcBus <- st_interpolate_aw(
+  fc,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+)
+fcpara <- st_interpolate_aw(
+  fc,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+)
 
-#commuter rail
-ARlCR <- access2transit("CR", 1600, Arl)
-st_write(ARlCR, "AgencyProfileData/ArlAccess.xlsx", append = T)
-AlxCR <- access2transit("CR", 1600, Alx)
-st_write(AlxCR, "AgencyProfileData/AlxAccess.xlsx", append = T)
-CityFFXCR <- access2transit("CR", 1600, CityFFX)
-st_write(CityFFXCR, "AgencyProfileData/CityFFXAccess.xlsx", append = T)
-LouCR <- access2transit("CR", 1600, Lou)
-st_write(LouCR, "AgencyProfileData/Louaccess.xlsx", append = T)
-fcCR <- access2transit("CR", 1600, fc)
-st_write(fcCR, "AgencyProfileData/fcaccess.xlsx", append = T)
-ffxCR <- access2transit("CR", 1600, ffx)
-st_write(ffxCR, "AgencyProfileData/ffxaccess.xlsx", append =T)
+fcAccess <- rbind(fcHR, fcBus, fcpara) %>% mutate(Jurisdiction = "City of Falls Church")
+#Alexandria
+AlxCR <- st_interpolate_aw(
+  Alx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "CR")
+AlxBus <- st_interpolate_aw(
+  Alx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Bus")
+AlxHR <- st_interpolate_aw(
+  Alx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+Alxpara <- st_interpolate_aw(
+  Alx,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Paratransit")
+
+AlxAccess <- rbind(AlxBus, AlxHR, AlxCR, Alxpara) %>% mutate(Jurisdiction = "City of Alexandria")
+#City of Fairfax
+CityFFXCR <- st_interpolate_aw(
+  CityFFX,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "CR")
+CityFFXBus <- st_interpolate_aw(
+  CityFFX,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Bus")
+CityFFXHR <- st_interpolate_aw(
+  CityFFX,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+CityFFXpara <- st_interpolate_aw(
+  CityFFX,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Paratransit")
+
+CityFFXAccess <- rbind(CityFFXBus, CityFFXpara) %>% mutate(Jurisdiction = "City of Fairfax")
+#Fairfax
+ffxCR <- st_interpolate_aw(
+  ffx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "CR")
+ffxBus <- st_interpolate_aw(
+  ffx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Bus")
+ffxHR <- st_interpolate_aw(
+  ffx,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+ffxpara <- st_interpolate_aw(
+  ffx,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Paratransit")
+
+ffxAccess <- rbind(ffxBus, ffxHR, ffxpara, ffxCR) %>% mutate(Jurisdiction = "Fairfax County")
+#Loudoun
+louCR <- st_interpolate_aw(
+  Lou,
+  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
+    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "CR")
+louBus <- st_interpolate_aw(
+  Lou,
+  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
+    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Bus")
+louHR <- st_interpolate_aw(
+  Lou,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+loupara <- st_interpolate_aw(
+  Lou,
+  NovaStopsRoutes_2022 %>%
+    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "Paratransit")
+
+LouAccess <- rbind(louBus, loupara) %>% mutate(Jurisdiction = "Loudoun County")
+
+NovaAcessJurisdictions <- rbind(LouAccess,
+                                ArlAccess,
+                                AlxAccess,
+                                ffxAccess,
+                                CityFFXAccess,
+                                fcAccess)
+st_write(NovaAcessJurisdictions, "AgencyProfileData/NovaAccessJurisdictions.xlsx")
 
 
+NovaCensus <- rbind(Arl %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Arlington"),
+                    Alx %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Alexandria"),
+                    Lou %>% st_drop_geometry() %>% summarize_all(sum) %>% mutate(County = "Loudoun"),
+                    ffx %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Fairfax"),
+                    fc %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Falls Church"),
+                    CityFFX %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "CityFairfax"))
 
+st_write(NovaCensus, "AgencyProfileData/NovaCensusSum.xlsx")
 
+colnames(NovaStopsRoutes)
 
+NovaStopsRoutes <- NovaStopsRoutes_2022 %>%
+  mutate(lat = st_coordinates(.)[,2],
+         lon = st_coordinates(.)[,1]) %>%
+  st_drop_geometry()
+st_write(NovaStopsRoutes, "AgencyProfileData/NovaStops.xlsx")
 
-#paratransit
-access2paratransit <- function(Census) {
-
-  BuffJoin <- NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid()
-
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    Census,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-
-
-
-
-ARlpara <- access2paratransit(Arl)
-st_write(ARlpara, "AgencyProfileData/ArlAccess.xlsx", append = T)
-Alxpara <- access2paratransit( Alx)
-st_write(Alxpara, "AgencyProfileData/AlxAccess.xlsx", append = T)
-CityFFXpara <- access2paratransit(CityFFX)
-st_write(CityFFXpara, "AgencyProfileData/CityFFXAccess.xlsx", append = T)
-Loupara <- access2paratransit(Lou)
-st_write(Loupara, "AgencyProfileData/Louaccess.xlsx", append = T)
-fcpara <- access2paratransit(fc)
-st_write(fcpara, "AgencyProfileData/fcaccess.xlsx", append = T)
-ffxpara <- access2paratransit(ffx)
-st_write(ffxpara, "AgencyProfileData/ffxaccess.xlsx", append =T)
-
-
-
-#unit of analysis is route and agency
-#1/4 mile for bus
-access2transitbus <- function(route) {
-  #pull just the stops within a 1/4 mile radius of county
-  BuffJoin <- NovaStopsRoutes_NOWMATA %>% filter(newroute_id == route) %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid()
-  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
-  #CensusJobs <- st_join(Census, JobsbyBG)
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    CensusDataTracts,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-#1 mile for commuter rail
-access2transitvre <- function(route) {
-  #pull just the stops within a 1/4 mile radius of county
-  BuffJoin <- NovaStopsRoutes_2022NOWWMATA %>% filter(newroute_id == route) %>%
-    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid()
-  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
-  #CensusJobs <- st_join(Census, JobsbyBG)
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    CensusDataTracts,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-
-#list of all routes for ART, DASH, CUE, FFX, LCT, VRE, PRTC
-routes <- NovaStopsRoutes_NOWMATA %>% distinct(newroute_id, Agency, Mode) %>% as.data.frame()
-st_write(routes, "AgencyProfileData/routes.csv")
-
-busroutes <- routes %>% filter(Mode == "Bus")
-crroutes <- routes %>% filter(Mode == "CR")
-
-
-
-#loop through all nova routes to find access to transit at route level
-#do bus and rail separately (since they have different buffer radii), then combine
-NovaAccessTransit_Bus <- lapply(busroutes$newroute_id, access2transitbus) %>%
-  do.call(rbind.data.frame, .) %>% cbind(busroutes, .)
-
-NovaAccessTransit_VRE <- lapply(crroutes$newroute_id, access2transitvre) %>%
-  do.call(rbind.data.frame, .) %>% cbind(crroutes, .)
-
-
-#combine
-NovaAccessTransit <- rbind(NovaAccessTransit_VRE, NovaAccessTransit_Bus)
-
-#save as a xlsx
-st_write(NovaAccessTransit, "AgencyProfileData/NovaAccessTransit.xlsx", append = FALSE)
-#run again for each agency
-
-access2transitagency <- function(agency, buffer) {
-  #pull just the stops within a 1/4 mile radius of county
-  BuffJoin <- NovaStopsRoutes_NOWMATA %>% filter(Agency == agency) %>%
-    st_buffer(dist = buffer) %>% st_union() %>% st_make_valid()
-  #join employment data with demographic data # THIS IS ON PAUSE, WILL COME BACK TO THIS
-  #CensusJobs <- st_join(Census, JobsbyBG)
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    CensusDataTracts,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
-}
-
-NovaAccessTransitbyAgency <- rbind(access2transitagency("ART", 400) %>% mutate(Agency = "ART"),
-                                   access2transitagency("CUE", 400) %>% mutate(Agency = "CUE"),
-                                   access2transitagency("DASH", 400) %>% mutate(Agency = "DASH"),
-                                   access2transitagency("FFX", 400) %>% mutate(Agency = "FFX"),
-                                   access2transitagency("LCT", 400) %>% mutate(Agency = "LCT"),
-                                   access2transitagency("VRE", 1600) %>% mutate(Agency = "VRE"),
-                                   access2transitagency("PRTC", 400) %>% mutate(Agency = "PRTC"))
-
-st_write(NovaAccessTransitbyAgency, "AgencyProfileData/NovaAccessTransitbyAgency.xlsx")
 
 
 # Amount of Service -------------------------------------------------------
@@ -633,37 +664,9 @@ NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes_2022.shp")
 routes <- NovaStopsRoutes_2022 %>% distinct(newrt_d, Agency, Mode) %>% as.data.frame()
 
 
-#separate out for each county
-Arl <- countycensus_tract("Arlington") %>% st_transform(crs = 4326)
-Alx <- countycensus_tract("Alexandria city") %>% st_transform(crs = 4326)
-FallsChurch <- countycensus_tract("Falls Church city") %>% st_transform(crs = 4326)
-FfxCity <- countycensus_tract("Fairfax city") %>% st_transform(crs = 4326)
-Loudoun <- countycensus_tract("Loudoun") %>% st_transform(crs = 4326)
-ffx <- countycensus_tract("Fairfax County") %>% st_transform(crs = 4326)
 
 nova_amount <- lapply(routes$newrt_d, amount_service) %>%
   do.call(rbind.data.frame, .)
-
-arl_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-alx_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-fc_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-ffxcity_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-Lou_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-ffx_amount <- lapply(routes$newrt_d, amount_service) %>%
-  do.call(rbind.data.frame, .)
-
- #run loop through all routes
-nova_amount <- rbind(arl_amount,
-                     alx_amount,
-                     fc_amount,
-                     ffxcity_amount,
-                     Lou_amount,
-                     ffx_amount)
 
 
 st_write(nova_amount, "AgencyProfileData/NovaAmountTransit.xlsx")
