@@ -107,13 +107,17 @@ metroridersVA <- function(month, year, file) {
 file <- "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MetroRail/Metro Ridership Workbooks/FY 2023/MASTER NVTC Metrorail Ridership FY23.xlsx"
 #create data table for VA UPT
 #for new month, add line in rbind
-rail_riders <-
-  metroridersVA('Jul', 2022, file)
+rail_riders <- rbind(
+  metroridersVA('Jul', 2022, file),
+  metroridersVA('Aug', 2022, file),
+  metroridersVA('Sep', 2022, file)
+)
 
-rbind()
+
+
 
 ###write to excel
-
+library(openxlsx)
 wb <- loadWorkbook("Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx")
 writeData(wb, sheet = "MetroRailFY23", rail_riders)
 saveWorkbook(wb, "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx", overwrite = T)
