@@ -1,16 +1,73 @@
-access2transit <- function(Mode, buff, Census) {
-
-  BuffJoin <- NovaStopsRoutes_2022 %>% filter(Mode == Mode) %>%
-    st_buffer(dist = buff) %>% st_union() %>% st_make_valid()
-
-  #interpolate census data to these stops
-  TransitCensus <- st_interpolate_aw(
-    Census,
-    BuffJoin,
-    extensive = T
-  ) %>% st_drop_geometry() %>% as.data.frame()
-  return(TransitCensus)
+#load libraries
+library(tidyverse)
+library(here)
+library(censusapi)
+library(tidycensus)
+library(sf)
+library(units)
+library(tidytransit)
+library(toolingtransit)
+library(mapview)
+#CensusTracts need to include PRTC jursidictions
+NOVA_Plus <- c("Arlington",
+               "Fairfax County",
+               "Fairfax city",
+               "Loudoun",
+               "Alexandria City",
+               "Falls Church City",
+               "Prince William County",
+               "Stafford County",
+               "Spotsylvania County",
+               "Fredericksburg City",
+               "Manassas City",
+               "Manassas Park City")
+CensusDataTracts <- countycensus_tract(NOVA_Plus) %>%
+  st_transform(crs = 4326) %>%
+  select(-GEOID)
+countycensus_tract <- function(County) {
+  #load required libraries
+  require(tidyverse)
+  require(censusapi)
+  require(sf)
+  require(units)
+  #pull census acs data for 2020, select variables for county
+  CensusCnty <- get_acs(
+    geography = "tract",
+    year = 2020,
+    variables = c(TotalPopulation = "B01003_001",
+                  TotalCommuters = "B08301_001",
+                  DriveAlone = "B08301_003",
+                  PublicTransport = "B08301_010",
+                  HHCount = "B25044_001",
+                  PovertyRatioTotal = "C17002_001",
+                  PovertyOver200Pct = "C17002_008",
+                  HHOwn0Veh = "B25044_003",
+                  HHRent0Veh = "B25044_010",
+                  WhitePop = "B02001_002"),
+    state = "VA",
+    county = County,
+    geometry = TRUE,
+    output = "wide"
+  ) %>%
+    #calculate new variables
+    mutate(Count0Car = HHOwn0VehE + HHRent0VehE,
+           NonWhitePop = TotalPopulationE - WhitePopE,
+           Under200PctPoverty = PovertyRatioTotalE - PovertyOver200PctE,
+           area = st_area(.)) %>%
+    #select only necessary variables (remove margin of error columns)
+    select(TotalPopulationE, HHCountE, Count0Car, TotalCommutersE, PublicTransportE, NonWhitePop, Under200PctPoverty, area, GEOID)
+  #set units for the area as square miles
+  CensusCnty$area <- set_units(CensusCnty$area, mi^2)
+  return(CensusCnty)
 }
+
+Arl <- countycensus_tract("Arlington") %>% st_transform(crs = 4326) %>% select(-GEOID)
+Alx <- countycensus_tract("Alexandria city") %>% st_transform(crs = 4326) %>% select(-GEOID)
+CityFFX <- countycensus_tract("Fairfax city") %>% st_transform(crs = 4326) %>% select(-GEOID)
+Lou <- countycensus_tract("Loudoun") %>% st_transform(crs = 4326) %>% select(-GEOID)
+fc <- countycensus_tract("Falls Church city") %>% st_transform(crs = 4326) %>% select(-GEOID)
+ffx <- countycensus_tract("Fairfax County") %>% st_transform(crs = 4326) %>% select(-GEOID)
+
 
 #bus = 1/4 mile (400m)
 #hr = 1/2 mile (800m)
