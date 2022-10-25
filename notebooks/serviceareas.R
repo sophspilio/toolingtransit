@@ -42,41 +42,36 @@ routes <- function(gtfszip, Agency){
     #arbitrary summariation to join by route_id
     summarize(count = n()) %>%
     select(route_id) %>% mutate(Agency = Agency) %>%
-    unite(route_id, Agency, col = NewRouteID, sep = "_")
+    unite(route_id, Agency, col = NewRouteID, sep = "_") %>%
+    st_cast(., "MULTIPOINT") %>% st_cast("POINT") %>%
+    mutate(lat = st_coordinates(.)[,2],
+           lon = st_coordinates(.)[,1]) %>%
+    st_drop_geometry()
   return(routes)
-
 }
 
-stops <- function(gtfszip, Agency){
-  GTFS <- read_gtfs(file.path(GTFS_path, gtfszip))
-  stops <- inner_join(GTFS$stops, GTFS$stop_times) %>%
-    inner_join(., GTFS$trips) %>% stops_as_sf() %>%
-    group_by(route_id) %>% summarize(count = n()) %>%
-    select(route_id) %>% mutate(Agency = Agency) %>%
-    unite(route_id, Agency, col = NewRouteID, sep = "_", remove = F)
-  return(stops)
-}
+
 
 NovaRouteShapes <- rbind(
-  routes("2022-04_Arlington.zip", "ART"),
-  routes("2022-03_CUE.zip", "CUE"),
-  routes("2022-04_DASH.zip", "DASH"),
-  routes("2022-03_Fairfax_Connector.zip", "FFX"),
-  routes("2022-07_Loudoun.zip", "LCT"),
-  routes("2022-03_VRE.zip", "VRE"),
-  PRTCroutes
+  routes("2022-04_Arlington.zip", "ART") %>% mutate(Agency = "ART"),
+  routes("2022-03_CUE.zip", "CUE") %>% mutate(Agency = "CUE"),
+  routes("2022-04_DASH.zip", "DASH") %>% mutate(Agency = "DASH"),
+  routes("2022-03_Fairfax_Connector.zip", "FFX") %>% mutate(Agency = "FFX"),
+  routes("2022-07_Loudoun.zip", "LCT") %>% mutate(Agency = "LCT"),
+  routes("2022-03_VRE.zip", "VRE") %>% mutate(Agency = "VRE")
+ # PRTCroutes
 )
-st_write(NovaRouteShapes, "AgencyProfileData/NovarouteShapes.shp")
 
-NovaStopShapes <- rbind(
-  stops("2022-04_Arlington.zip", "ART"),
-  stops("2022-03_CUE.zip", "CUE"),
-  stops("2022-04_DASH.zip", "DASH"),
-  stops("2022-03_Fairfax_Connector.zip", "FFX"),
-  stops("2022-07_Loudoun.zip", "LCT"),
-  stops("2022-03_VRE.zip", "VRE"),
-  stops("2022-03_OmniRide_PRTC (2).zip", "PRTC")
-)
+ART <- routes("2022-04_Arlington.zip", "ART") %>%
+  st_cast(., "MULTIPOINT")
+ART <- st_cast(ART, "POINT") %>%
+  mutate(lat = st_coordinates(.)[,2],
+         lon = st_coordinates(.)[,1]) %>%
+  st_drop_geometry()
+
+
+st_write(NovaRouteShapes, "AgencyProfileData/NovaRouteShapes.shp")
+
 
 
 #write xy as column
