@@ -110,7 +110,8 @@ file <- "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Dat
 rail_riders <- rbind(
   metroridersVA('Jul', 2022, file),
   metroridersVA('Aug', 2022, file),
-  metroridersVA('Sep', 2022, file)
+  metroridersVA('Sep', 2022, file),
+  metroridersVA('Oct', 2022, file)
 )
 
 
