@@ -10,7 +10,7 @@ library(tidytransit)
 library(toolingtransit)
 library(mapview)
 
-NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes_2022.shp")
+NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes.shp")
 #bus = 1/4 mile (400m)
 #hr = 1/2 mile (800m)
 #para = 3/4 mile (1200m)
@@ -187,6 +187,13 @@ louBus <- st_interpolate_aw(
     st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
   extensive = T
 ) %>% mutate(Mode = "Bus")
+louHR <- st_interpolate_aw(
+  Lou,
+  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
+    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
+  extensive = T
+) %>% mutate(Mode = "HR")
+
 
 loupara <- st_interpolate_aw(
   Lou,
@@ -195,7 +202,7 @@ loupara <- st_interpolate_aw(
   extensive = T
 ) %>% mutate(Mode = "Paratransit")
 
-LouJobs <- rbind(louBus, loupara) %>% mutate(Jurisdiction = "Loudoun County")
+LouJobs <- rbind(louBus, louHR, loupara) %>% mutate(Jurisdiction = "Loudoun County")
 
 #Falls Church
 fcBus <- st_interpolate_aw(
@@ -239,10 +246,10 @@ cityffxJobs <- rbind(cityffxBus, cityffxpara) %>% mutate(Jurisdiction = "City of
 #join all
 NovaJobs <- rbind(ArlJobs, AlxJobs, ffxJobs, LouJobs, cityffxJobs, fcJobs) %>%
   select(Jurisdiction, Mode, EMP2015, EMP2020, EMP2025)
-st_write(NovaJobs, "AgencyProfileData/NovaJobs.xlsx")
+st_write(NovaJobs, "AgencyProfileData/NovaJobs.xlsx", delete_dsn = T)
 
 
-#total jobs by jurisdiction
+#total jobs by jurisdiction (censusjobtotal)
 JobsSum <- rbind(Arl %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Arlington County"),
                 Alx %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "City of Alexandria"),
                 Lou %>% st_drop_geometry() %>% summarize_all(sum) %>% mutate(County = "Loudoun County"),
