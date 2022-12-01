@@ -1,6 +1,5 @@
 #load libraries
 library(tidyverse)
-library(here)
 library(censusapi)
 library(tidycensus)
 library(sf)
@@ -9,25 +8,21 @@ library(tidytransit)
 library(toolingtransit)
 library(mapview)
 #CensusTracts need to include PRTC jursidictions
-NOVA_Plus <- c("Arlington",
+NOVA <- c("Arlington",
                "Fairfax County",
                "Fairfax city",
                "Loudoun",
                "Alexandria City",
-               "Falls Church City",
-               "Prince William County",
-               "Stafford County",
-               "Spotsylvania County",
-               "Fredericksburg City",
-               "Manassas City",
-               "Manassas Park City")
-CensusDataTracts <- countycensus_tract(NOVA_Plus) %>%
-  st_transform(crs = 4326) %>%
-  select(-GEOID)
+               "Falls Church City")
+
+
+NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes.shp")
+
 countycensus_tract <- function(County) {
   #load required libraries
   require(tidyverse)
   require(censusapi)
+  require(tidycensus)
   require(sf)
   require(units)
   #pull census acs data for 2020, select variables for county
@@ -60,6 +55,9 @@ countycensus_tract <- function(County) {
   CensusCnty$area <- set_units(CensusCnty$area, mi^2)
   return(CensusCnty)
 }
+CensusDataTracts <- countycensus_tract(NOVA) %>%
+  st_transform(crs = 4326) %>%
+  select(-GEOID)
 
 Arl <- countycensus_tract("Arlington") %>% st_transform(crs = 4326) %>% select(-GEOID)
 Alx <- countycensus_tract("Alexandria city") %>% st_transform(crs = 4326) %>% select(-GEOID)
@@ -107,25 +105,25 @@ fcCR <- st_interpolate_aw(
   NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
     st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
   extensive = T
-)
+) %>% mutate(Mode = "CR")
 fcHR <- st_interpolate_aw(
   fc,
   NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
     st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
   extensive = T
-)
+) %>% mutate(Mode = "HR")
 fcBus <- st_interpolate_aw(
   fc,
   NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
     st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
   extensive = T
-)
+) %>% mutate(Mode = "Bus")
 fcpara <- st_interpolate_aw(
   fc,
   NovaStopsRoutes_2022 %>%
     st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
   extensive = T
-)
+) %>% mutate(Mode = "Paratransit")
 
 fcAccess <- rbind(fcHR, fcBus, fcpara) %>% mutate(Jurisdiction = "City of Falls Church")
 #Alexandria
@@ -235,7 +233,7 @@ loupara <- st_interpolate_aw(
   extensive = T
 ) %>% mutate(Mode = "Paratransit")
 
-LouAccess <- rbind(louBus, loupara) %>% mutate(Jurisdiction = "Loudoun County")
+LouAccess <- rbind(louHR, louBus, loupara) %>% mutate(Jurisdiction = "Loudoun County")
 
 NovaAcessJurisdictions <- rbind(LouAccess,
                                 ArlAccess,
@@ -243,7 +241,7 @@ NovaAcessJurisdictions <- rbind(LouAccess,
                                 ffxAccess,
                                 CityFFXAccess,
                                 fcAccess)
-st_write(NovaAcessJurisdictions, "AgencyProfileData/NovaAccessJurisdictions.xlsx")
+st_write(NovaAcessJurisdictions, "AgencyProfileData/NovaAccessJurisdictions.xlsx", delete_dsn = T)
 
 
 NovaCensus <- rbind(Arl %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "Arlington"),
@@ -255,10 +253,4 @@ NovaCensus <- rbind(Arl %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(
 
 st_write(NovaCensus, "AgencyProfileData/NovaCensusSum.xlsx")
 
-colnames(NovaStopsRoutes)
 
-NovaStopsRoutes <- NovaStopsRoutes_2022 %>%
-  mutate(lat = st_coordinates(.)[,2],
-         lon = st_coordinates(.)[,1]) %>%
-  st_drop_geometry()
-st_write(NovaStopsRoutes, "AgencyProfileData/NovaStops.xlsx")
