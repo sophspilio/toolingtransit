@@ -65,7 +65,14 @@ metroridersVA <- function(month, year, file) {
                   "VIENNA",
                   "VIRGINIA SQUARE-GMU",
                   "WEST FALLS CHURCH",
-                  "WIEHLE-RESTON EAST")
+                  "WIEHLE-RESTON EAST",
+                  #silver line phase 2 stations
+                  "ASHBURN",
+                  "DULLES AIRPORT",
+                  "INNOVATION CENTER",
+                  "LOUDOUN GATEWAY",
+                  "RESTON TOWN CENTER",
+                  "HERNDON MONROE")
 
   vaentries <- riders %>% filter(MezzID != "***") %>%
     filter(MezzName %in% vastations) %>%
@@ -104,14 +111,23 @@ metroridersVA <- function(month, year, file) {
 
 
 ##################################################
-file <- "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MetroRail/Metro Ridership Workbooks/FY 2023/MASTER NVTC Metrorail Ridership FY23.xlsx"
+Data_path <- file.path ("Z:",
+                        "NVTC General", "Projects and Programs",
+                        "Transit Resource Center (TRC)",
+                        "Data", "Ridership", "Metrorail",
+                        "Metro Ridership Workbooks", "FY 2023")
+
+file <-file.path(Data_path, "MASTER NVTC Metrorail Ridership FY23.xlsx")
 #create data table for VA UPT
 #for new month, add line in rbind
 rail_riders <- rbind(
   metroridersVA('Jul', 2022, file),
   metroridersVA('Aug', 2022, file),
   metroridersVA('Sep', 2022, file),
-  metroridersVA('Oct', 2022, file)
+  metroridersVA('Oct', 2022, file),
+  metroridersVA('Nov', 2022, file),
+  metroridersVA('Dec', 2022, file),
+  metroridersVA('Jan', 2023, file)
 )
 
 
@@ -122,4 +138,5 @@ library(openxlsx)
 wb <- loadWorkbook("Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx")
 writeData(wb, sheet = "MetroRailFY23", rail_riders)
 saveWorkbook(wb, "Z:/NVTC General/Projects and Programs/Transit Resource Center (TRC)/Data/Ridership/MASTER metro ridership.xlsx", overwrite = T)
+
 
