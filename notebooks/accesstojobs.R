@@ -10,7 +10,7 @@ library(tidytransit)
 library(toolingtransit)
 library(mapview)
 
-NovaStopsRoutes_2022 <- st_read("AgencyProfileData/NovaStopsRoutes.shp")
+NovaStopsRoutes <- st_read("AgencyProfileData/NovaStopsRoutes.shp")
 #bus = 1/4 mile (400m)
 #hr = 1/2 mile (800m)
 #para = 3/4 mile (1200m)
@@ -25,7 +25,7 @@ countycensus_tract <- function(County) {
   #pull census acs data for 2020, select variables for county
   CensusCnty <- get_acs(
     geography = "tract",
-    year = 2020,
+    year = 2021,
     variables = c(TotalPopulation = "B01003_001",
                   TotalCommuters = "B08301_001",
                   DriveAlone = "B08301_003",
@@ -73,7 +73,8 @@ Jobs <- st_read("Z:/NVTC General/Projects and Programs/Transit Resource Center (
   st_transform(crs = 4326) %>% st_intersection(Nova) %>% select(NAME, EMP2015, EMP2020, EMP2025)
 
 #interpolate the employement data to census tracts then find centroid
-JobsTracts <- st_interpolate_aw(Jobs %>% select(-NAME), CensusDataTracts, extensive = T) %>% st_centroid(.)
+JobsTracts <- st_interpolate_aw(Jobs %>% select(-NAME), CensusDataTracts, extensive = T) %>%
+  st_centroid(.)
 
 
 ### Join Job data to census data so you have job data in census tract form WITH county  identified
@@ -88,163 +89,104 @@ Lou <- JobJoin %>% filter(grepl('Loudoun', NAME)) %>% select(-NAME)
 fc <- JobJoin %>% filter(grepl('Falls Church', NAME)) %>% select(-NAME)
 ffx <- JobJoin %>% filter(grepl('Fairfax County', NAME)) %>% select(-NAME)
 
-
+Access <- function(county, mode, type = "All", buff){
+  if(mode == "Bus"){
+    if(type == "High Frequency"){
+      access <- st_interpolate_aw(
+        county,
+        NovaStopsRoutes %>% filter(Mode == mode, newrt_d %in% HighFreq$newrt_id) %>%
+          st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+        extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+      return(access)
+    }else if (type == "Late Night"){
+      access <- st_interpolate_aw(
+        county,
+        NovaStopsRoutes %>% filter(Mode == mode, newrt_d %in% LateNight$newrt_id) %>%
+          st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+        extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+      return(access)
+    } else if (type == "Weekend"){
+      access <- st_interpolate_aw(
+        county,
+        NovaStopsRoutes %>% filter(Mode == mode, newrt_d %in% Weekend$newrt_id) %>%
+          st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+        extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+      return(access)
+    } else if (type == "Weekday"){
+      access <- st_interpolate_aw(
+        county,
+        NovaStopsRoutes %>% filter(Mode == mode, newrt_d %in% Weekday$newrt_id) %>%
+          st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+        extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+      return(access)
+    } else {
+      access <- st_interpolate_aw(
+        county,
+        NovaStopsRoutes %>% filter(Mode == mode) %>%
+          st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+        extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+      return(access)
+    }
+  }else if(mode == "Paratransit") {
+    access <- st_interpolate_aw(
+      county,
+      NovaStopsRoutes %>%
+        st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+      extensive = TRUE) %>% mutate(Mode = mode, Type  = type)
+    return(access)
+  } else {
+    access <- st_interpolate_aw(
+      county,
+      NovaStopsRoutes %>% filter(Mode == mode) %>%
+        st_buffer(dist = buff) %>% st_union() %>% st_make_valid(),
+      extensive = TRUE) %>% mutate(Mode = mode, Type = type)
+    return(access)
+  }
+}
 
 #arlington
-ARlCR <- st_interpolate_aw(
-  Arl,
-  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
-    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "CR")
-ARlBus <- st_interpolate_aw(
-  Arl,
-  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-ARlHR <- st_interpolate_aw(
-  Arl,
-  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
-    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "HR")
-ARlpara <- st_interpolate_aw(
-  Arl,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
+ArlJobs<- rbind(Access(Arl, "Bus", buff = 400),
+                Access(Arl, "CR", buff = 1600),
+                Access(Arl, "HR", buff = 800),
+                Access(Arl, "Paratransit", buff = 1200)) %>%
+  mutate(Jurisdiction = "Arlington County")
 
-ArlJobs <- rbind(ARlBus, ARlHR, ARlCR, ARlpara) %>% mutate(Jurisdiction = "Arlington County")
+#alexandria
+AlxJobs <- rbind(Access(Alx, "Bus", buff = 400),
+                   Access(Alx, "CR", buff = 1600),
+                   Access(Alx, "HR", buff = 800),
+                   Access(Alx, "Paratransit", buff = 1200)) %>%
+  mutate(Jurisdiction = "City of Alexandria")
 
+#City of Falls Church
+fcJobs <- rbind(Access(fc, "Bus", buff = 400),
+                  #Access(fc, "CR", buff = 1600),
+                  Access(fc, "HR", buff = 800),
+                  Access(fc, "Paratransit", buff = 1200)) %>%
+  mutate(Jurisdiction = "City of Falls Church")
 
-#Alexandria
-AlxCR <- st_interpolate_aw(
-  Alx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
-    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "CR")
-AlxBus <- st_interpolate_aw(
-  Alx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-AlxHR <- st_interpolate_aw(
-  Alx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
-    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "HR")
-Alxpara <- st_interpolate_aw(
-  Alx,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
+#city of ffx
+CityFFXJobs <- rbind(Access(CityFFX, "Bus", buff = 400),
+                       Access(CityFFX, "Paratransit", buff = 1200)) %>%
+  mutate(Jurisdiction = "City of Fairfax")
 
-AlxJobs <- rbind(AlxBus, AlxHR, AlxCR, Alxpara) %>% mutate(Jurisdiction = "City of Alexandria")
-
-#Fairfax
-#Fairfax jobs data includes falls church and city of fairfax as well as
-# fairfax county
-ffxCR <- st_interpolate_aw(
-  ffx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "CR") %>%
-    st_buffer(dist = 1600) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "CR")
-ffxBus <- st_interpolate_aw(
-  ffx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-ffxHR <- st_interpolate_aw(
-  ffx,
-  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
-    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "HR")
-ffxpara <- st_interpolate_aw(
-  ffx,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
-
-ffxJobs <- rbind(ffxBus, ffxHR, ffxpara, ffxCR) %>%
+#Fairfax County
+ffxJobs <- rbind(Access(ffx, "Bus", buff = 400),
+                   Access(ffx, "CR", buff = 1600),
+                   Access(ffx, "HR", buff = 800),
+                   Access(ffx, "Paratransit", buff = 1200)) %>%
   mutate(Jurisdiction = "Fairfax County")
 
-#Loudoun
-#no commuter rail or heavy rail in loudoun
+#Loudoun County
+LouJobs <- rbind(Access(Lou, "Bus", buff = 400),
+                   #Access(Lou, "CR", buff = 1600),
+                   Access(Lou, "HR", buff = 800),
+                   Access(Lou, "Paratransit", buff = 1200)) %>%
+  mutate(Jurisdiction = "Loudoun County")
 
-louBus <- st_interpolate_aw(
-  Lou,
-  NovaStopsRoutes_2022 %>% filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-louHR <- st_interpolate_aw(
-  Lou,
-  NovaStopsRoutes_2022 %>% filter(Mode == "HR") %>%
-    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "HR")
-
-
-loupara <- st_interpolate_aw(
-  Lou,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
-
-LouJobs <- rbind(louBus, louHR, loupara) %>% mutate(Jurisdiction = "Loudoun County")
-
-#Falls Church
-fcBus <- st_interpolate_aw(
-  fc,
-  NovaStopsRoutes_2022 %>%  filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-fcHR <- st_interpolate_aw(
-  fc,
-  NovaStopsRoutes_2022 %>%  filter(Mode == "HR") %>%
-    st_buffer(dist = 800) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "HR")
-fcpara <- st_interpolate_aw(
-  fc,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
-
-fcJobs <- rbind(fcBus, fcHR, fcpara) %>% mutate(Jurisdiction = "City of Falls Church")
-
-#City of Fairfax
-cityffxBus <- st_interpolate_aw(
-  CityFFX,
-  NovaStopsRoutes_2022 %>%  filter(Mode == "Bus") %>%
-    st_buffer(dist = 400) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Bus")
-
-cityffxpara <- st_interpolate_aw(
-  CityFFX,
-  NovaStopsRoutes_2022 %>%
-    st_buffer(dist = 1200) %>% st_union() %>% st_make_valid(),
-  extensive = T
-) %>% mutate(Mode = "Paratransit")
-
-cityffxJobs <- rbind(cityffxBus, cityffxpara) %>% mutate(Jurisdiction = "City of Fairfax")
 
 #join all
-NovaJobs <- rbind(ArlJobs, AlxJobs, ffxJobs, LouJobs, cityffxJobs, fcJobs) %>%
+NovaJobs <- rbind(ArlJobs, AlxJobs, ffxJobs, LouJobs, CityFFXJobs, fcJobs) %>%
   select(Jurisdiction, Mode, EMP2015, EMP2020, EMP2025)
 st_write(NovaJobs, "AgencyProfileData/NovaJobs.xlsx", delete_dsn = T)
 
@@ -257,7 +199,7 @@ JobsSum <- rbind(Arl %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(Cou
                 fc %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "City of Falls Church"),
                 CityFFX %>% st_drop_geometry()%>% summarize_all(sum) %>% mutate(County = "City of Fairfax"))
 
-st_write(JobsSum, "AgencyProfileData/JobsSum.xlsx")
+st_write(JobsSum, "AgencyProfileData/JobsSum.xlsx", delete_dsn = T)
 
 
 
