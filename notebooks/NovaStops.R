@@ -12,6 +12,17 @@ GTFS_path <- file.path ("Z:",
                         "GTFS")
 
 
+ARTzip <- "2023-02_Arlington.zip"
+CUEzip <- "2023-02_CUE.zip"
+DASHzip <- "2023-02_DASH.zip"
+FFXzip <- "2023-02_Fairfax_Connector.zip"
+LCTzip <- "2023-02_Loudoun.zip"
+PRTCzip <- "2023-02_OmniRide_PRTC.zip"
+VREzip <- "2023-02_VRE.zip"
+Metrobuszip <- "2023-02_Metrobus.zip"
+Metrorailzip <- "2023-02_Metrorail.zip"
+
+
 stops <- function(gtfszip, agency) {
   require(tidyverse)
   require(tidytransit)
@@ -48,39 +59,33 @@ stops <- function(gtfszip, agency) {
 }
 
 
-NovaStops <- rbind(stops("2022-11_OmniRide_PRTC.zip", "PRTC"),
-                   stops("2022-11_VRE.zip", "VRE"),
-                   stops("2022-11_Arlington.zip", "ART"),
-                   stops("2022-11_CUE.zip", "CUE"),
-                   stops("2022-11_DASH.zip", "DASH"),
-                   stops("2022-11_Fairfax_Connector.zip", "FFX"),
-                   stops("2022-11_Loudoun.zip", "LCT"))
+NovaStops <- rbind(stops(PRTCzip, "PRTC"),
+                   stops(VREzip, "VRE"),
+                   stops(ARTzip, "ART"),
+                   stops(CUEzip, "CUE"),
+                   stops(DASHzip, "DASH"),
+                   stops(FFXzip, "FFX"),
+                   stops(LCTzip, "LCT"))
 
 
 
 #Metrobus
-GTFS_path <- file.path ("Z:",
-                        "NVTC General",
-                        "Projects and Programs",
-                        "Transit Resource Center (TRC)",
-                        "Data",
-                        "GTFS")
 Nova <- st_read("data/Nova.shp")
-Metrobus2022 <- read_gtfs(file.path(GTFS_path, "2022-11_Metrobus.zip"))
-Metrobus2022$stops <-  stops_as_sf(Metrobus2022$stops) %>%
+Metrobus <- read_gtfs(file.path(GTFS_path, Metrobuszip))
+Metrobus$stops <-  stops_as_sf(Metrobus$stops) %>%
   st_intersection(., Nova) %>%  mutate(stop_lat = st_coordinates(.)[,2],
                                        stop_lon = st_coordinates(.)[,1]) %>%
   st_drop_geometry()
 
-MetrobusStops <-  inner_join(Metrobus2022$stop_times, Metrobus2022$trips) %>%
+MetrobusStops <-  inner_join(Metrobus$stop_times, Metrobus$trips) %>%
   group_by(route_id, stop_id) %>% summarize(trips = n()) %>%
-  inner_join(Metrobus2022$stops) %>%
-  inner_join(., Metrobus2022$routes %>% select(route_id, route_long_name, route_short_name)) %>%
+  inner_join(Metrobus$stops) %>%
+  inner_join(., Metrobus$routes %>% select(route_id, route_long_name, route_short_name)) %>%
   mutate(Agency = "WMATA", Mode = "Bus") %>%  unite(route_id, Agency, sep = "_", col = "newroute_id", remove = F) %>%
   select(newroute_id, route_id, stop_lat, stop_lon, Agency, route_long_name, route_short_name, Mode)
 
 #metrorail
-Metrorail <- read_gtfs(file.path(GTFS_path, "2022-11_Metrorail.zip"))
+Metrorail <- read_gtfs(file.path(GTFS_path, Metrorailzip))
 
 Metrorail$stops <- stops_as_sf(Metrorail$stops) %>% filter(grepl("PF_", stop_id)) %>%
   st_intersection(., Nova) %>% mutate(stop_lat = st_coordinates(.)[,2],
@@ -104,7 +109,7 @@ NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
                                                 ifelse(Agency == "CUE", route_long_name, route_id)))) %>%
   ungroup() %>%
   select(newroute_id, Agency, route_name, stop_lat, stop_lon, Mode) %>% arrange(Agency) %>%
-  st_write(., "AgencyProfileData/NovaStops_11.7.2022.csv", delete_dsn = T)
+  st_write(., "AgencyProfileData/NovaStops_02.17.2023.csv", delete_dsn = TRUE)
 
 
 #create route file
@@ -113,7 +118,7 @@ NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
                                                 ifelse(Agency == "CUE", route_long_name, route_id)))) %>%
   ungroup() %>%
   distinct(newroute_id, route_id, route_name, Agency, Mode) %>%
-  st_write(., "AgencyProfileData/routes.xlsx")
+  st_write(., "AgencyProfileData/routes.xlsx", delete_dsn = TRUE)
 
 #NovaStopsRoutes file for Acccess to Transit/ Access to Jobs analysis
 
