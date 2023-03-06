@@ -5,8 +5,6 @@ A package for all (some?most?a few?) things transit data!
 Below I've written out some hopefully helpful steps to get started using R in a collaborative way. 
 
 
-**[Check out the documentation site](https://sophspilio.github.io/toolingtransit/)** 
-
 
 
 ## Step 1: Installation! 
