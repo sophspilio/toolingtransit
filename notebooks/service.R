@@ -15,8 +15,21 @@ GTFS_path <- file.path ("Z:",
                         "Transit Resource Center (TRC)",
                         "Data",
                         "GTFS")
-#set up
 
+Nova <- st_read("data/Nova.shp")
+#MAKE SURE TO UPDATE GTFS ZIP NAMES AS NEW DATA IS DOWNLOADED!!
+ARTzip <- "2023-02_Arlington.zip"
+CUEzip <- "2023-02_CUE.zip"
+DASHzip <- "2023-02_DASH.zip"
+FFXzip <- "2023-02_Fairfax_Connector.zip"
+LCTzip <- "2023-02_Loudoun.zip"
+PRTCzip <- "2023-02_OmniRide_PRTC.zip"
+VREzip <- "2023-02_VRE.zip"
+Metrobuszip <- "2023-02_Metrobus.zip"
+Metrorailzip <- "2023-02_Metrorail.zip"
+
+
+#service
 service <- function(GTFSzip, Agency, Month, Year){
   #set up
   message(Agency)
@@ -131,16 +144,26 @@ service <- function(GTFSzip, Agency, Month, Year){
     group_by(route_id) %>% summarize(avgwkdaytrips = mean(t, na.rm = T)) %>%
     inner_join(., routes)
 
+  #average sat trips
+  routes <- trips %>%
+    summarize(x = n()) %>% inner_join(., cal %>% select(service_id,daysofop, days)) %>%
+    group_by(route_id, service_id, days) %>% summarize(n = n())  %>%
+    mutate(t = ifelse(days == "M-F", NA,
+                      ifelse(days == "Su", NA,
+                             ifelse(days == "M-Th", NA,
+                                    ifelse(days == "F", NA, n))))) %>%
+    group_by(route_id) %>% summarize(avgsattrips = sum(t, na.rm = T)) %>%
+    inner_join(., routes)
 
-  #average wkday, sat, sun, trips per week
-  routes <- GTFS$trips %>%
-    inner_join(., cal) %>%
-    select(route_id, service_id, trip_id, direction_id,
-           monday, tuesday, wednesday, thursday, friday, saturday, sunday, daysofop) %>%
-    group_by(route_id) %>% summarize(avgwkdaytrips = sum(monday == 1),
-                                     avgsattrips = sum(saturday == 1),
-                                     avgsuntrips = sum(sunday == 1)) %>%
-    mutate(tripsperweek = (avgwkdaytrips*5)+avgsattrips+avgsuntrips) %>%
+  #average sun trips
+  routes <- trips %>%
+    summarize(x = n()) %>% inner_join(., cal %>% select(service_id,daysofop, days)) %>%
+    group_by(route_id, service_id, days) %>% summarize(n = n()) %>%
+    mutate(t = ifelse(days == "M-F", NA,
+                      ifelse(days == "Sa", NA,
+                             ifelse(days == "M-Th", NA,
+                                    ifelse(days == "F", NA, n))))) %>%
+    group_by(route_id) %>% summarize(avgsuntrips = sum(t, na.rm = T)) %>%
     inner_join(., routes)
 
 
@@ -148,30 +171,36 @@ service <- function(GTFSzip, Agency, Month, Year){
   return(routes)
 }
 
-serviceALL <- rbind(service("2022-11_OmniRide_PRTC.zip", "PRTC", 11, 2022),
-                     service("2022-11_VRE.zip", "VRE", 11, 2022),
-                     service("2022-11_Arlington.zip", "ART", 11, 2022),
-                     service("2022-11_CUE.zip", "CUE", 11, 2022),
-                     service("2022-11_DASH.zip", "DASH", 11, 2022),
-                     service("2022-11_Fairfax_Connector.zip", "FFX", 11, 2022),
-                     service("2022-11_Loudoun.zip", "LCT", 11, 2022))
+serviceALL <- rbind(service(PRTCzip, "PRTC", 02, 2023),
+                     service(VREzip, "VRE", 02, 2023),
+                     service(ARTzip, "ART", 02, 2023),
+                     service(CUEzip, "CUE", 02, 2023),
+                     service(DASHzip, "DASH", 02, 2023),
+                     service(FFXzip, "FFX", 02, 2023),
+                     service(LCTzip, "LCT", 02, 2023))
 
-
-# WMATA Bus -------------------------------------------------------------------
-
-
-WMATAroutesVA <- st_read("AgencyProfileData/WMATARoutesVA.csv")
-
-GTFS_path <- file.path ("Z:",
-                        "NVTC General",
-                        "Projects and Programs",
-                        "Transit Resource Center (TRC)",
-                        "Data",
-                        "GTFS")
-
-
+# WMATA Setup -------------------------------------------------------------------
 #read gtfs
-WMATABus <- read_gtfs(file.path(GTFS_path, "2022-11_Metrobus.zip"))
+WMATABus <- read_gtfs(file.path(GTFS_path, Metrobuszip))
+WMATARail <- read_gtfs(file.path(GTFS_path, Metrorailzip))
+
+#Metrobus in VA
+VAMetrobus <- inner_join(shapes_as_sf(WMATABus$shapes),
+                         WMATABus$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+  st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>%
+  mutate(Agency = "WMATA", Mode = "Bus")
+
+#Metrorail in VA
+VAMetrorail <- inner_join(shapes_as_sf(WMATARail$shapes),
+                          WMATARail$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+  st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>%
+  mutate(Agency = "WMATA", Mode = "HR")
+
+
+WMATAroutesVA <- rbind(VAMetrobus, VAMetrorail)
+
+# WMATA Bus ---------------------------------------------------------------
+
 cal <- WMATABus$calendar %>%
   mutate(daysofop = monday + tuesday + wednesday + thursday + friday + saturday + sunday) %>%
   mutate(days = ifelse(daysofop == 5, "M-F", ifelse(daysofop == 4, "M-Th",
@@ -179,9 +208,10 @@ cal <- WMATABus$calendar %>%
                                                            ifelse(saturday == 1, "Sa",
                                                                   ifelse(sunday == 1, "Su", NA))))))
 
+
 #length of route
 shapes <- shapes_as_sf(WMATABus$shapes) %>%
-  right_join(., WMATABus$trips %>% filter(route_id%in% WMATAroutesVA$route_d)) %>%
+  right_join(., WMATABus$trips %>% filter(route_id%in% WMATAroutesVA$route_id)) %>%
   mutate(dist = st_length(geometry)) %>%
   group_by(route_id, direction_id) %>%
   summarize(dist = mean(dist))
@@ -191,10 +221,12 @@ shapes$dist <- set_units(shapes$dist, mi)
 
 #create route file
 #avg route time
-trips <- WMATABus$trips %>%
-  select(route_id, service_id, trip_id, direction_id) %>%
+trips <- WMATABus$trips %>% inner_join(., cal) %>%
+  select(route_id, service_id, trip_id, direction_id,
+         monday, tuesday, wednesday, thursday, friday, saturday, sunday) %>%
   left_join(., WMATABus$stop_times) %>%
   group_by(route_id, trip_id, service_id, direction_id)
+
 routes <- trips %>%
   summarize(start = as_hms(min(arrival_time)),
             end = as_hms(max(departure_time))) %>%
@@ -204,7 +236,8 @@ routes <- trips %>%
 units(routes$routetime) <- "mins"
 
 #length(miles) and directional length
-routes <- shapes %>% group_by(route_id) %>% summarize(length = sum(dist), direction = n()) %>%
+routes <- shapes %>%
+  group_by(route_id) %>% summarize(length = sum(dist), direction = n()) %>%
   st_drop_geometry() %>% mutate(length1way = length/direction) %>% select(-direction) %>%
   inner_join(., routes)
 
@@ -234,15 +267,25 @@ routes <- trips %>% inner_join(.,cal %>% select(service_id,daysofop)) %>%
 
 
 #days in service
-routes <- trips %>% inner_join(.,cal %>% select(service_id,daysofop)) %>%
-  group_by(route_id, service_id,daysofop) %>% summarize(n = n()) %>%
-  group_by(route_id) %>% summarize(daysinserv = sum(daysofop)) %>%
-  inner_join(., routes)
+#routes <- trips %>% inner_join(.,cal %>% select(service_id,daysofop)) %>%
+ # group_by(route_id, service_id,daysofop) %>% summarize(n = n()) %>%
+  #group_by(route_id) %>% summarize(daysinserv = sum(daysofop)) %>%
+  #inner_join(., routes)
 
+#days in service
+routes <- trips %>% group_by(route_id) %>% summarize(monday = ifelse(sum(monday) >1, 1, 0),
+                                                     tuesday = ifelse(sum(tuesday)>1, 1, 0),
+                                                     wednesday = ifelse(sum(wednesday)>1, 1, 0),
+                                                     thursday = ifelse(sum(thursday)>1, 1, 0),
+                                                     friday = ifelse(sum(friday)>1, 1, 0),
+                                                     saturday = ifelse(sum(saturday)>1, 1, 0),
+                                                     sunday = ifelse(sum(sunday)>1, 1, 0)) %>%
+  mutate(daysinserv = monday + tuesday + wednesday + thursday + friday + saturday + sunday) %>%
+  inner_join(., routes)
 
 #average weekday trips
 routes <-trips %>%
-  summarize(x = n()) %>% inner_join(., cal %>% select(service_id,daysofop, days)) %>%
+  summarize(x = n()) %>% inner_join(., cal) %>%
   group_by(route_id, service_id, days) %>% summarize(n = n()) %>%
   mutate(t = ifelse(days == "M-F", n,
                     ifelse(days == "Su", NA,
@@ -273,18 +316,17 @@ routes <- trips %>%
   group_by(route_id) %>% summarize(avgsuntrips = sum(t, na.rm = T)) %>%
   inner_join(., routes)
 
+
+
+
 MetrobusService <- routes
 
 
 # WMATA Rail --------------------------------------------------------------
 
-WMATARail <- read_gtfs(file.path(GTFS_path, "2022-11_Metrorail.zip"))
-
-Nova <- st_read("data/Nova.shp")
-
 vashpids <- shapes_as_sf(WMATARail$shapes) %>% st_intersection(., Nova) %>%
   select(shape_id) %>% st_drop_geometry()
-st_write(vashpids, "AgencyProfileData/VaRailShapeIDs.csv")
+#st_write(vashpids, "AgencyProfileData/VaRailShapeIDs.csv")
 
 
 WMATARail$shapes <- shapes_as_sf(WMATARail$shapes)
@@ -295,7 +337,6 @@ shapes <- WMATARail$shapes %>% filter(shape_id %in% vashpids$shape_id) %>%
   summarize(dist = mean(dist))
 #make sure to update the units to miles (not meters)
 shapes$dist <- set_units(shapes$dist, mi)
-
 
 #create calendar
 cal <- WMATARail$calendar_dates %>% mutate(DoW = str_to_lower(wday(date, label = T, abbr = F))) %>%
@@ -335,7 +376,7 @@ routes <- routes %>% mutate(speed = length/as.numeric(routetime, unit = "hours")
 routes <- trips %>%
   summarize(start = as_hms(min(arrival_time)),
             end = as_hms(max(departure_time))) %>%
-  group_by(route_id) %>% summarize(span = as.numeric(mx(end) - min(start), unit = "hours")) %>%
+  group_by(route_id) %>% summarize(span = as.numeric(max(end) - min(start), unit = "hours")) %>%
   inner_join(., routes)
 
 #avg stops + avg stop spacing
@@ -358,28 +399,52 @@ routes <- trips %>% group_by(route_id) %>% summarize(monday = ifelse(sum(monday)
   inner_join(., routes)
 
 
+#average sat trips
+routes <- trips %>%
+  summarize(x = n()) %>% inner_join(., cal %>% select(service_id,daysofop, days)) %>%
+  group_by(route_id, service_id, days) %>% summarize(n = n())  %>%
+  mutate(t = ifelse(days == "M-F", NA,
+                    ifelse(days == "Su", NA,
+                           ifelse(days == "M-Th", NA,
+                                  ifelse(days == "F", NA, n))))) %>%
+  group_by(route_id) %>% summarize(avgsattrips = sum(t, na.rm = T)) %>%
+  inner_join(., routes)
+
+#average sun trips
+routes <- trips %>%
+  summarize(x = n()) %>% inner_join(., cal %>% select(service_id,daysofop, days)) %>%
+  group_by(route_id, service_id, days) %>% summarize(n = n()) %>%
+  mutate(t = ifelse(days == "M-F", NA,
+                    ifelse(days == "Sa", NA,
+                           ifelse(days == "M-Th", NA,
+                                  ifelse(days == "F", NA, n))))) %>%
+  group_by(route_id) %>% summarize(avgsuntrips = sum(t, na.rm = T)) %>%
+  inner_join(., routes)
+
 #average weekday, sat, sun, trips per week
 routes <- WMATARail$trips %>% filter(shape_id %in% vashpids$shape_id) %>%
   inner_join(., cal) %>%
   select(route_id, service_id, trip_id, direction_id,
          monday, tuesday, wednesday, thursday, friday, saturday, sunday, daysofop) %>%
-  group_by(route_id) %>% summarize(avgwkdaytrips = sum(monday == 1),
+  group_by(route_id) %>% summarize(avgsuntrips = sum(sunday == 1),
                                    avgsattrips = sum(saturday == 1),
-                                   avgsuntrips = sum(sunday == 1)) %>%
-  mutate(tripsperweek = (avgwkdaytrips*5)+avgsattrips+avgsuntrips) %>%
+                                   avgwkdaytrips = sum(monday == 1)) %>%
+  mutate(tripsperweek = (avgwkdaytrips*5)+avgsattrips+avgsuntrips)%>%
   inner_join(., routes)
 
-# Combine all data --------------------------------------------------------
+MetrorailService <- routes
 
-all <- MetrobusService %>% mutate(Agency = "WMATA", Month = 11, Year = 2022)  %>%
-  rbind(., serviceALL) %>%
+# Combine all data --------------------------------------------------------
+Metroservice <- rbind(MetrobusService, MetrorailService) %>%
+  mutate(Agency = "WMATA", Month = 02, Year = 2023)
+all <- rbind(Metroservice, serviceALL) %>%
   unite("newroute_id", route_id, Agency, sep = "_", remove = F) %>%
   mutate(routetime = as.double(routetime)) %>%
   select(Agency, Year, Month, newroute_id, route_id,
          daysinserv, span, length, length1way, stops, stopspacing, routetime,
          speed, tripsperweek, avgwkdaytrips, avgsattrips, avgsuntrips) %>% arrange(Agency)
 
-st_write(all, "AgencyProfileData/service_2022-11.xlsx")
+st_write(all, "AgencyProfileData/service_2023-02.xlsx", delete_dsn = TRUE)
 
 
 # Agency Level Stops Trips and Routes for AgencyName------------------------------------
@@ -402,23 +467,64 @@ agencylevel <- function(GTFSzip, Agency){
   names(x) <- c("stops", "routes","tripsperweek", "agency")
   return(x)
 }
-agencylevel <- rbind(agencylevel("2022-11_OmniRide_PRTC.zip", "PRTC"),
-                     agencylevel("2022-11_VRE.zip", "VRE"),
-                     agencylevel("2022-11_Arlington.zip", "ART"),
-                     agencylevel("2022-11_CUE.zip", "CUE"),
-                     agencylevel("2022-11_DASH.zip", "DASH"),
-                     agencylevel("2022-11_Fairfax_Connector.zip", "FFX"),
-                     agencylevel("2022-11_Loudoun.zip", "LCT"))
-#wmata
-WMATABus <- read_gtfs(file.path(GTFS_path, "2022_11_Metrobus.zip"))
-WMATAroutesVA <- st_read("AgencyProfileData/WMATARoutesVA.csv")
-count(WMATAroutesVA)
+agencylevel <- rbind(agencylevel(PRTCzip, "PRTC"),
+                     agencylevel(VREzip, "VRE"),
+                     agencylevel(ARTzip, "ART"),
+                     agencylevel(CUEzip, "CUE"),
+                     agencylevel(DASHzip, "DASH"),
+                     agencylevel(FFXzip, "FFX"),
+                     agencylevel(LCTzip, "LCT"))
+
+#WMATA
+
 Nova <- st_read("data/Nova.shp")
-mbstops <- st_intersection(stops_as_sf(WMATABus$stops), Nova) %>% count()
-#rail stops
-Metrorail <- read_gtfs(file.path(GTFS_path, "2022-11_Metrorail.zip"))
 
-railstops <- stops_as_sf(Metrorail$stops) %>% filter(grepl("STN_", stop_id)) %>%
+#Metrobus: Stops, Routes, Trips
+MBstops <- st_intersection(stops_as_sf(WMATABus$stops), Nova) %>% st_drop_geometry() %>% count()
+MBroutes <- inner_join(shapes_as_sf(WMATABus$shapes),
+                         WMATABus$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+  st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% count()
+
+#stops
+rbind(st_intersection(stops_as_sf(WMATABus$stops), Nova) %>% st_drop_geometry() %>% count(),
+      stops_as_sf(WMATARail$stops) %>% filter(grepl("STN_", stop_id)) %>%
+        st_intersection(., Nova) %>% st_drop_geometry() %>% count()
+      )
+
+#routes
+rbind(inner_join(shapes_as_sf(WMATABus$shapes),
+                 WMATABus$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+        st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>% count(),
+      inner_join(shapes_as_sf(WMATARail$shapes),
+                 WMATARail$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+        st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>% count()
+
+)
+
+rbind("Metrobus", "Metrorail")
+
+cbind(
+  #type
+  rbind("Metrobus", "Metrorail"),
+  #stops
+  rbind(st_intersection(stops_as_sf(WMATABus$stops), Nova) %>% st_drop_geometry() %>% count(),
+        stops_as_sf(WMATARail$stops) %>% filter(grepl("STN_", stop_id)) %>%
+          st_intersection(., Nova) %>% st_drop_geometry() %>% count()),
+  #routes
+  rbind(inner_join(shapes_as_sf(WMATABus$shapes),
+                   WMATABus$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+          st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>% count(),
+        inner_join(shapes_as_sf(WMATARail$shapes),
+                   WMATARail$trips %>% select(shape_id, route_id) %>% distinct()) %>%
+          st_intersection(Nova) %>% st_drop_geometry() %>% select(route_id) %>% distinct() %>% count()
+
+  )
+  ) %>%
+  rename(type = 1, stops = 2, routes = 3) %>% suppressWarnings()
+#trips from service calcs above
+
+#Metrorail: Stops, Routes, Trips
+railstops <- stops_as_sf(WMATARail$stops) %>% filter(grepl("STN_", stop_id)) %>%
   st_intersection(., Nova)
-
+railstops %>% count()
 
