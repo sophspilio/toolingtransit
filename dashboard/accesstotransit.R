@@ -13,11 +13,19 @@ library(mapview)
 GTFS_path <- file.path ("Z:",
                         "NVTC General", "Projects and Programs",
                         "Transit Resource Center (TRC)",
-                        "Data", "GTFS")
+                        "Data", "GTFS","2023")
 
 NovaStopsRoutes <- st_read("AgencyProfileData/NovaStopsRoutes.shp")
 
-
+ARTzip <- "2023-10_Arlington.zip"
+CUEzip <- "2023-10_CUE.zip"
+DASHzip <- "2023-10_DASH.zip"
+FFXzip <- "2023-10_Fairfax_Connector.zip"
+LCTzip <- "2023-10_Loudoun.zip"
+PRTCzip <- "2023-10_OmniRide_PRTC.zip"
+VREzip <- "2023-10_VRE.zip"
+Metrobuszip <- "2023-10_Metrobus.zip"
+Metrorailzip <- "2023-10_Metrorail.zip"
 
 #county census data
 countycensus_tract <- function(County) {
@@ -92,13 +100,13 @@ service <- function(GTFS, week){
 
 
 #headways for all Nova routes peak period
-NovaFreq <- rbind(freq("2022-11_Arlington.zip", "ART", "07:00:00", "08:00:00", "wkdays"),
-                  #freq("2022-11_CUE.zip", "CUE", "07:00:00", "08:00:00", 1),
-                  freq("2022-11_DASH.zip", "DASH", "07:00:00", "08:00:00", "wkdays"),
-                  freq("2022-11_Fairfax_Connector.zip", "FFX", "07:00:00", "08:00:00", "wkdays"),
-                  freq("2022-11_Loudoun.zip", "LCT", "07:00:00", "08:00:00", "wkdays"),
-                  freq("2022-11_OmniRide_PRTC.zip", "PRTC", "07:00:00", "08:00:00", "wkdays"),
-                  freq("2022-12_Metrobus.zip", "WMATA", "07:00:00", "08:00:00", "wkdays"))
+NovaFreq <- rbind(freq(ARTzip, "ART", "07:00:00", "08:00:00", "wkdays"),
+                  freq(CUEzip, "CUE", "07:00:00", "08:00:00", "wkdays"),
+                  freq(DASHzip, "DASH", "07:00:00", "08:00:00", "wkdays"),
+                  freq(FFXzip, "FFX", "07:00:00", "08:00:00", "wkdays"),
+                  freq(LCTzip, "LCT", "07:00:00", "08:00:00", "wkdays"),
+                  freq(PRTCzip, "PRTC", "07:00:00", "08:00:00", "wkdays"),
+                  freq(Metrobuszip, "WMATA", "07:00:00", "08:00:00", "wkdays"))
 
 #change units from seconds to minutes
 NovaFreq$median_headways <- NovaFreq$median_headways %>%
@@ -107,38 +115,51 @@ NovaFreq$mean_headways <- NovaFreq$mean_headways %>%
   set_units("secs") %>% set_units("min") %>% drop_units()
 
 #weekday high frequency routes (less than or equal to 15 min headways)
-HighFreq <- NovaFreq %>% filter(median_headways <= 15) %>%
-  #two loops, not actually 15 min
-  filter(newrt_id != "3944_PRTC")
+HighFreq <- NovaFreq %>% filter(median_headways <= 15)
 
 # 2. Late Night Weekday Service (9-10pm) ----------------------------------
 
-LateNight <- rbind(freq("2022-11_Arlington.zip", "ART", "21:00:00", "22:00:00", "wkdays"),
-                  #freq("2022-11_CUE.zip", "CUE", "21:00:00", "22:00:00", 1),
-                  freq("2022-11_DASH.zip", "DASH", "21:00:00", "22:00:00", "wkdays"),
-                  freq("2022-11_Fairfax_Connector.zip", "FFX", "21:00:00", "22:00:00", "wkdays"),
-                  freq("2022-11_Loudoun.zip", "LCT", "21:00:00", "22:00:00", "wkdays"),
-                  freq("2022-11_OmniRide_PRTC.zip", "PRTC", "21:00:00", "22:00:00", "wkdays"),
-                  freq("2022-12_Metrobus.zip", "WMATA", "21:00:00", "22:00:00", "wkdays"))
+LateNight <- rbind(freq(ARTzip, "ART", "21:00:00", "22:00:00", "wkdays"),
+                  freq(CUEzip, "CUE", "21:00:00", "22:00:00", "wkdays"),
+                  freq(DASHzip, "DASH", "21:00:00", "22:00:00", "wkdays"),
+                  freq(FFXzip, "FFX", "21:00:00", "22:00:00", "wkdays"),
+                  freq(LCTzip, "LCT", "21:00:00", "22:00:00", "wkdays"),
+                  freq(PRTCzip, "PRTC", "21:00:00", "22:00:00", "wkdays"),
+                  freq(Metrobuszip, "WMATA", "21:00:00", "22:00:00", "wkdays"))
+
+LateNight$median_headways <- LateNight$median_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
+LateNight$mean_headways <- LateNight$mean_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
 
 # 3. Weekend and Weekday Service ------------------------------------------------------
-Weekend <- rbind(freq("2022-11_Arlington.zip", "ART", "06:00:00", "23:00:00", "wkends"),
-                 #freq("2022-11_CUE.zip", "CUE"),
-                 freq("2022-11_DASH.zip", "DASH", "06:00:00", "23:00:00", "wkends"),
-                 freq("2022-11_Fairfax_Connector.zip", "FFX", "06:00:00", "23:00:00", "wkends"),
-                 freq("2022-11_Loudoun.zip", "LCT", "06:00:00", "23:00:00", "wkends"),
-                 freq("2022-11_OmniRide_PRTC.zip","PRTC", "06:00:00", "23:00:00", "wkends"),
-                 freq("2022-12_Metrobus.zip", "WMATA", "06:00:00", "23:00:00", "wkends")
+Weekend <- rbind(freq(ARTzip, "ART", "06:00:00", "23:00:00", "wkends"),
+                 freq(CUEzip, "CUE","06:00:00", "23:00:00", "wkends"),
+                 freq(DASHzip, "DASH", "06:00:00", "23:00:00", "wkends"),
+                 freq(FFXzip, "FFX", "06:00:00", "23:00:00", "wkends"),
+                 freq(LCTzip, "LCT", "06:00:00", "23:00:00", "wkends"),
+                 freq(PRTCzip,"PRTC", "06:00:00", "23:00:00", "wkends"),
+                 freq(Metrobuszip, "WMATA", "06:00:00", "23:00:00", "wkends")
                  )
 
-Weekday <- rbind(freq("2022-11_Arlington.zip", "ART", "06:00:00", "23:00:00", "wkdays"),
-                 #freq("2022-11_CUE.zip", "CUE"),
-                 freq("2022-11_DASH.zip", "DASH", "06:00:00", "23:00:00", "wkdays"),
-                 freq("2022-11_Fairfax_Connector.zip", "FFX", "06:00:00", "23:00:00", "wkdays"),
-                 freq("2022-11_Loudoun.zip", "LCT", "06:00:00", "23:00:00", "wkdays"),
-                 freq("2022-11_OmniRide_PRTC.zip", "PRTC", "06:00:00", "23:00:00", "wkdays"),
-                 freq("2022-12_Metrobus.zip", "WMATA", "06:00:00", "23:00:00", "wkdays")
+Weekend$median_headways <- Weekend$median_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
+Weekend$mean_headways <- Weekend$mean_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
+
+Weekday <- rbind(freq(ARTzip, "ART", "06:00:00", "23:00:00", "wkdays"),
+                 freq(CUEzip, "CUE","06:00:00", "23:00:00", "wkdays"),
+                 freq(DASHzip, "DASH", "06:00:00", "23:00:00", "wkdays"),
+                 freq(FFXzip, "FFX", "06:00:00", "23:00:00", "wkdays"),
+                 freq(LCTzip, "LCT", "06:00:00", "23:00:00", "wkdays"),
+                 freq(PRTCzip, "PRTC", "06:00:00", "23:00:00", "wkdays"),
+                 freq(Metrobuszip, "WMATA", "06:00:00", "23:00:00", "wkdays")
 )
+
+Weekday$median_headways <- Weekday$median_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
+Weekday$mean_headways <- Weekday$mean_headways %>%
+  set_units("secs") %>% set_units("min") %>% drop_units()
 
 # Access to Transit  ------------------------------------------------------
 

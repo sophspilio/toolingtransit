@@ -80,6 +80,23 @@ JobsTracts <- st_interpolate_aw(Jobs %>% select(-NAME), CensusDataTracts, extens
 ### Join Job data to census data so you have job data in census tract form WITH county  identified
 JobJoin <- st_join(CensusDataTracts, JobsTracts) %>% na.omit()
 
+#find total access to jobs from transit(hr, cr, bus)
+busbuff <- NovaStopsRoutes %>% filter(Mode == "Bus") %>% st_buffer(dist = 400) %>%
+  st_union() %>% st_make_valid()
+crbuff <- NovaStopsRoutes %>% filter(Mode == "CR") %>% st_buffer(dist = 1600) %>%
+  st_union() %>% st_make_valid()
+hrbuff <- NovaStopsRoutes %>% filter(Mode == "HR") %>% st_buffer(dist = 800) %>%
+  st_union() %>% st_make_valid()
+
+hrcrbuff <- st_union(hrbuff, crbuff) %>% st_make_valid()
+
+transitbuff <- st_union(busbuff) %>% st_union(., hrcrbuff)
+
+nova_access2jobs <- st_interpolate_aw(
+  Jobs %>% select(-NAME),
+  transitbuff %>% st_make_valid(),
+  extensive = TRUE
+)
 
 #create individual polygons for each jurisdiction
 Arl <- JobJoin %>% filter(grepl('Arl', NAME)) %>% select(-NAME)

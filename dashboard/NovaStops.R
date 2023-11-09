@@ -4,38 +4,29 @@ library(sf)
 library(tidytransit)
 library(toolingtransit)
 library(mapview)
+library(units)
+
 GTFS_path <- file.path ("Z:",
                         "NVTC General",
                         "Projects and Programs",
                         "Transit Resource Center (TRC)",
                         "Data",
-                        "GTFS")
+                        "GTFS",
+                        "2023")
 
 
-ARTzip <- "2023-02_Arlington.zip"
-CUEzip <- "2023-02_CUE.zip"
-DASHzip <- "2023-02_DASH.zip"
-FFXzip <- "2023-02_Fairfax_Connector.zip"
-LCTzip <- "2023-02_Loudoun.zip"
-PRTCzip <- "2023-02_OmniRide_PRTC.zip"
-VREzip <- "2023-02_VRE.zip"
-Metrobuszip <- "2023-02_Metrobus.zip"
-Metrorailzip <- "2023-02_Metrorail.zip"
-
+ARTzip <- "2023-10_Arlington.zip"
+CUEzip <- "2023-10_CUE.zip"
+DASHzip <- "2023-10_DASH.zip"
+FFXzip <- "2023-10_Fairfax_Connector.zip"
+LCTzip <- "2023-10_Loudoun.zip"
+PRTCzip <- "2023-10_OmniRide_PRTC.zip"
+VREzip <- "2023-10_VRE.zip"
+Metrobuszip <- "2023-10_Metrobus.zip"
+Metrorailzip <- "2023-10_Metrorail.zip"
+Nova <- st_read("data/Nova.shp")
 
 stops <- function(gtfszip, agency) {
-  require(tidyverse)
-  require(tidytransit)
-  require(sf)
-  require(units)
-  ### All gtfs data is located in this file path
-  GTFS_path <- file.path ("Z:",
-                          "NVTC General",
-                          "Projects and Programs",
-                          "Transit Resource Center (TRC)",
-                          "Data",
-                          "GTFS")
-
   #establish gtfs data
   GTFS <- read_gtfs(file.path(GTFS_path, gtfszip))
   message(agency)
@@ -70,7 +61,7 @@ NovaStops <- rbind(stops(PRTCzip, "PRTC"),
 
 
 #Metrobus
-Nova <- st_read("data/Nova.shp")
+
 Metrobus <- read_gtfs(file.path(GTFS_path, Metrobuszip))
 Metrobus$stops <-  stops_as_sf(Metrobus$stops) %>%
   st_intersection(., Nova) %>%  mutate(stop_lat = st_coordinates(.)[,2],
@@ -109,7 +100,7 @@ NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
                                                 ifelse(Agency == "CUE", route_long_name, route_id)))) %>%
   ungroup() %>%
   select(newroute_id, Agency, route_name, stop_lat, stop_lon, Mode) %>% arrange(Agency) %>%
-  st_write(., "AgencyProfileData/NovaStops_02.17.2023.csv", delete_dsn = TRUE)
+  st_write(., "AgencyProfileData/NovaStops_10.05.2023.csv", delete_dsn = TRUE)
 
 
 #create route file
@@ -120,6 +111,7 @@ NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
   distinct(newroute_id, route_id, route_name, Agency, Mode) %>%
   st_write(., "AgencyProfileData/routes.xlsx", delete_dsn = TRUE)
 
+
 #NovaStopsRoutes file for Acccess to Transit/ Access to Jobs analysis
 
 NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
@@ -129,3 +121,71 @@ NovaStops %>% mutate(route_name = ifelse(Agency == "PRTC", route_short_name,
   select(newroute_id, Agency, route_name, Mode) %>% arrange(Agency) %>%
   st_write(., "AgencyProfileData/NovaStopsRoutes.shp", delete_dsn = T)
 
+
+
+
+##### NovaBus Stops for shared stops ----
+
+Project_path <- file.path("Z:", "Sophie", "Mapping", "StateoftheStop", "data")
+
+#make stop file with all agencies
+ART <- read_gtfs(file.path(GTFS_path, ARTzip)) %>% .$stops %>% mutate(Agency = "ART")
+MB <- read_gtfs(file.path(GTFS_path, Metrobuszip))%>% .$stops %>% mutate(Agency = "MB")
+PRTC <- read_gtfs(file.path(GTFS_path, PRTCzip))%>% .$stops %>% mutate(Agency = "PRTC")
+LCT <- read_gtfs(file.path(GTFS_path, LCTzip))%>% .$stops %>% mutate(Agency = "LCT")
+DASH <- read_gtfs(file.path(GTFS_path, DASHzip))%>% .$stops %>% mutate(Agency = "DASH")
+FFX <- read_gtfs(file.path(GTFS_path, FFXzip))%>% .$stops %>% mutate(Agency = "FFX")
+CUE <- read_gtfs(file.path(GTFS_path, CUEzip))%>% .$stops %>% mutate(Agency = "CUE")
+
+stops <- rbind(ART %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      MB %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      PRTC %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      LCT %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      DASH %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      FFX %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      CUE %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency))
+
+
+#ART DASH and MB stop_codes are all shared
+someshared <- rbind(MB %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      ART %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency),
+      DASH %>% select(stop_id, stop_name, stop_code, stop_lat, stop_lon, Agency)) %>%
+  group_by(stop_code) %>% mutate(n = n()) %>%
+  filter(n > 1) %>% arrange(stop_code)
+
+#export all stops with note of who has shared between MB, ART, DASH
+someshared %>% distinct(stop_code) %>% mutate(shared_id = paste0(stop_code, "s")) %>% right_join(., stops) %>%
+  st_as_sf(., coords = c("stop_lon", "stop_lat"), crs = 4326) %>%
+  st_write(., file.path(Project_path, "allstops.shp"))
+
+#density based clustering plus shared stop_codes
+allstopsc <- st_read(file.path(Project_path, "allstops.shp")) %>%
+  mutate(CLUSTER_ID = ifelse(CLUSTER_ID == -1, NA, CLUSTER_ID))
+
+#agencies with same stop multiple routes
+sharedwithinagency <- allstopsc  %>% st_drop_geometry() %>% filter(!is.na(CLUSTER_ID)) %>%
+  group_by(CLUSTER_ID, Agency) %>%
+  mutate(n = n()) %>%
+  filter(n > 1L)
+
+
+c_id <- allstopsc  %>% st_drop_geometry() %>% filter(!is.na(shared_id),
+                                             !stop_id %in% sharedwithinagency$stop_id) %>%
+  as_tibble() %>% group_by(shared_id) %>% ungroup() %>%
+  select(shared_id, stop_id,  Agency) %>%
+  pivot_wider(names_from = Agency, values_from = stop_id)
+
+s_id <- allstopsc  %>% st_drop_geometry() %>% filter(!is.na(CLUSTER_ID),
+                                             !stop_id %in% sharedwithinagency$stop_id)  %>%
+  as_tibble() %>% group_by(CLUSTER_ID) %>% ungroup() %>%
+  select(CLUSTER_ID, stop_id, Agency) %>%
+  pivot_wider(names_from = Agency, values_from = stop_id)
+
+sharedstops <- full_join(c_id, s_id) %>% relocate(CLUSTER_ID, .after = shared_id) %>%
+  unite(., MB, DASH, ART, PRTC, LCT, FFX, CUE, col = "new_id", sep = "-", na.rm = TRUE, remove = FALSE)
+
+
+sharedstops %>% select(-CLUSTER_ID, -shared_id) %>%
+  st_write(., file.path(Project_path, "SharedStopsLookUp.xlsx"), delete_dsn = TRUE)
+
+inner_join(samplestops, sharedstops, by = c())
