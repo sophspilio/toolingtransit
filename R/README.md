@@ -1,1 +1,86 @@
 
+Below I've written out some hopefully helpful steps to get started using R in a collaborative way. 
+
+## Step 1: Installation! 
+
+#### Git
+Before we can do anything, you'll need to download `git`. I won't go into the nitty gritty, but essentially you'll need to use git for version control. Git essentially saves you from the hell of creating a million versions of the same document and naming them all `EssayV1.doc`, `EssayV2.doc`, `EssayV27COMMENTSUSETHISONE.doc`. So we use git! Also very helpful when collaborating- yay teamwork!  
+
+Quickly check you don't have git already on your computer: 
+
+Run this in the `terminal` to see where your git is (if you have one)
+```{bash}
+which git
+```
+
+and then run this to see what version you have
+```{bash}
+git --version
+```
+
+If you don't have it, download git for windows [here](https://gitforwindows.org/) and follow [these directions](https://happygitwithr.com/install-git.html#install-git-windows). 
+
+#### RStudio and GitHub
+In case you don't have these set up (you being someone who isn't Xavier), make sure you have created a [GitHub account](https://github.com/) and download R and RStudio (sidenote: why are you reading this documentation if you don't even have R????). [Download R here](https://cloud.r-project.org/). And [RStudio](https://www.rstudio.com/products/rstudio/download/preview/). 
+
+More realistically, you should probably make sure your R is up to date. I like to use `installr` but you can only use this on Windows, so be aware! 
+[A bit of info on `updateR` ](https://www.rdocumentation.org/packages/installr/versions/0.23.2/topics/updateR)
+
+```{r eval = F}
+install.packages("installr")
+library(installr)
+updateR()
+```
+
+
+You need to let GitHub and git know who you are. To do this, we link your GitHub account with your RStudio. There are about one million different ways to do this(the Google search actually shows 813,000 results, so maybe a bit of an over exaggeration). I've sifted through about 0.00001% of it and written out one way to do it. You can also follow these links to read and learn more: 
+
+- **[How to Use Git/GitHub with R](https://rfortherestofus.com/2021/02/how-to-use-git-github-with-r/)**
+
+- **[Happy Git and GitHub for the useR](https://happygitwithr.com/rstudio-git-github.html)** This one is particularly detailed, I've linked directly to *Connecting RStudio and to Git and GitHub*, but it also walks through installation. If you have issues with installation, this might be a good place to begin the troubleshooting process. You'll notice I link to it a couple of other times in this guide. 
+
+- **[Getting Started with  GitHub](https://jennybc.github.io/2014-05-12-ubc/ubc-r/session2.4_github.html)**
+
+
+## Step 2: Keys and Things
+Before you can really get started cloning repos or actually, you know, using version control you'll need to set up an SSH key to securely link your computer with GitHub. You can setup using RStudio or from a shell (like GitBash). The main difference between these two is that GitHub recommends using Ed25519 keys and RStudio will only create a RSA key. So to make things simple, I suggest just using the shell. I think this tutorial is pretty clear so I'll just let you follow that instead of re-writing it all here. 
+
+[Set up the SSH key pair](https://happygitwithr.com/ssh-keys.html#create-an-ssh-key-pair)
+
+Hopefully that process went smoothly. 
+
+## Step 3: Get Connected with GitHub (finally)
+These next two steps are only important if you want to be working within the `toolingtransit` or another repo that you want on GitHub. Right now is a good place to check in and decided what you're actually planning on doing. Do you want to just use the functions I've already made? 
+
+In that case just install and load that package! We use `install.github` instead of `install.packages` since this is a github package! Make sure you have `devtools` installed and loaded before doing this
+
+```{r, eval = FALSE}
+install.packages("devtools");library(devtools)
+install_github("sophspilio/toolingtransit")
+library(toolingtransit)
+```
+
+If you're interested in using GitHub in any way, let's continue on. 
+
+I have already set up a GitHub repo for `toolingtransit`, so you'll just need to import that repo into your RStudio. This way you can work within it. If you're setting up a different repo, I still think it's most useful to make it on GitHub and clone it, as opposed to making it on your own computer and then linking it to GitHub. 
+
+**Just so you know, Steps 1 and 2 only need to be done once on each machine you use! This is great news, since they are a hassle!**
+
+Alrighty then, let's get connected to `toolingtransit` or whatever project you want so we can get some actual work done. 
+
+First, navigate to our `toolingtransit` repo (or just create a new repo) and click the green button that says "Code". Select the SSH option and then copy the link to your clipboard. 
+
+Now, let's open RStudio and create a new project. Navigate to File>New Project>Version Control>Git. Paste your GitHub URL into the `Repository URL`  spot. Select open in new session since you want to actually open this thing and start. 
+
+Select `Creat Project` and voila, you've got your project! 
+
+## Step 4: Making Changes, Committing, Pushing, and Pulling
+Now let's actually do something productive. 
+
+Go ahead and make some kind of change to a file in this repo. Maybe add a line of text to the `README.md`? Make sure you save that change! 
+
+Now look to the left of your RStudio screen. There should be a tab thats says `Git` probably in the same quadrant that the `Environment` and `History` tabs are. Go ahead and select that tab. `Stage` the files you edited by clicking the stage button. They should highlight. Now select `Commit` and a new window will pop up. On the left in the comments window, write a brief summary of what changes you made. Now click the `Commit` button (directly below the comment window). 
+
+The final step will be to `Push` these comments to the GitHub repo. Before you do this, it's a good idea to always `Pull` beforehand to make sure someone somewhere else hasn't also been editing something and you're behind the times. So first select `Pull` and then `Push` that commit!!!
+
+Ta-da!!!! You've done it! 
