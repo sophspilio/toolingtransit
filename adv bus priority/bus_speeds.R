@@ -6,10 +6,8 @@ library(units)
 library(hms)
 library(ggplot2)
 
-
-
 # Part 0: Setup -----------------------------------------------------------
-
+#this first part sets up all the relevant files
 GTFS_path <- file.path ("Z:",
                         "NVTC General", "Projects and Programs",
                         "Transit Resource Center (TRC)",
@@ -22,22 +20,20 @@ Project_path <- file.path ("Z:",
 Nova <- st_read("data/Nova.shp")
 
 
+#zip files
+ARTzip <- "2023/2023-02_Arlington.zip"
+CUEzip <- "2023/2023-02_CUE.zip"
+DASHzip <- "2023/2023-02_DASH.zip"
+FFXzip <- "2023/2023-02_Fairfax_Connector.zip"
+LCTzip <- "2023/2023-02_Loudoun.zip"
+PRTCzip <- "2023/2023-02_OmniRide_PRTC.zip"
+VREzip <- "2023/2023-02_VRE.zip"
+Metrobuszip <- "2023/2023-02_Metrobus.zip"
+Metrorailzip <- "2023/2023-02_Metrorail.zip"
+
+#to save time, data was rdata files were created
 #load all
 load(file.path(Project_path, "data/busspeeds.RData"))
-
-#zip files
-ARTzip <- "2023-02_Arlington.zip"
-CUEzip <- "2023-02_CUE.zip"
-DASHzip <- "2023-02_DASH.zip"
-FFXzip <- "2023-02_Fairfax_Connector.zip"
-LCTzip <- "2023-02_Loudoun.zip"
-PRTCzip <- "2023-02_OmniRide_PRTC.zip"
-VREzip <- "2023-02_VRE.zip"
-Metrobuszip <- "2023-02_Metrobus.zip"
-Metrorailzip <- "2023-02_Metrorail.zip"
-
-
-
 #load individual files
 Novasegments <- readRDS(file.path(Project_path, "Data/Novasegments.RDS"))
 NovaRoutes <- readRDS(file.path(Project_path, "Data/NovaRoutes.RDS"))
@@ -51,7 +47,8 @@ save(Novasegments, NovaRoutes, NovaTime, NovaSpeed, RouteSpeed,
      )
 
 ## Stops -----------------------------------------------------------
-
+#using GTFS files, this function pulls stop data and joins it with the route data
+#so the stops can be identified to routes
 stops <- function(gtfszip, agency) {
   require(tidyverse)
   require(tidytransit)
@@ -79,6 +76,7 @@ stops <- function(gtfszip, agency) {
 }
 
 #all nova bus stops
+#joins all the stop data together into one master stop file
 NovaStops <- rbind(stops(PRTCzip, "PRTC"),
                    stops(ARTzip, "ART"),
                    stops(CUEzip, "CUE"),
@@ -109,6 +107,7 @@ stopclusters <- st_read(file.path(Project_path, "Analysis/2023-02-24_NovaStopsCl
 Novasegments <- st_read(file.path(Project_path, "Spatial Data/Feb 23 Segments/NOVAsegments202302.shp")) %>%
   filter(Agency != "CUE") %>%
   mutate(Agency = ifelse(Agency == "Metrobus", "MB", Agency)) %>%
+  #a segment is the distance between two stops
   mutate(stop_id1 = paste0(Agency, stop_id1),
          stop_id2 = paste0(Agency, stop_id2),
          segment_id = paste(stop_id1, stop_id2, sep = "-")) %>%
@@ -116,10 +115,9 @@ Novasegments <- st_read(file.path(Project_path, "Spatial Data/Feb 23 Segments/NO
 
 
 #find MB routes within VA
-#identify routes outside VA
 MetrobusStops <- stops(Metrobuszip, "MB") %>% st_intersection(., Nova) %>% select(-FID)
 VaMetrobusRoutes <- MetrobusStops %>% distinct(route_id)
-
+#identify routes outside VA
 notVA <- stops(Metrobuszip, "MB") %>%
   filter(!route_id %in% VaMetrobusRoutes$route_id) %>% distinct(route_id)
 
@@ -130,12 +128,12 @@ Novasegments <- Novasegments %>%
   filter(VA == "VA") %>% select(-VA)
 
 
-#convert to miles
+#convert to miles from meters
 Novasegments$distance <- Novasegments$distance %>% as.numeric() %>% set_units("meters")
 Novasegments$distance <- Novasegments$distance %>% set_units("miles")
 
 #join segments with clusters
-#to identify stops that are shared across
+#to identify stops that are shared across agencies
 Novasegments <- full_join(Novasegments, stopclusters,
                           by = c("stop_id1" = "stop_id", "route_id" = "route_id", "Agency" ="Agency")) %>%
   rename(novastop_id1 = novastop_id) %>% filter(!is.na(segment_id)) %>%
@@ -144,6 +142,7 @@ Novasegments <- full_join(Novasegments, stopclusters,
   mutate(novaseg_id = paste(novastop_id1, novastop_id2, sep = "-"), .keep = "unused") %>%
   filter(!grepl("NA", novaseg_id))
 
+#save this file so it doesn't need to be re-run each time
 saveRDS(Novasegments, file.path(Project_path, "Data/Novasegments.RDS"))
 st_write(Novasegments, file.path(Project_path, "Spatial Data/newIDNovasegments.shp"), delete_dsn = TRUE)
 
@@ -179,7 +178,7 @@ time <- function(gtfszip, agency){
 }
 
 
-
+#time between stops for each agency, combined into one master file
 NovaTime <- rbind(time(PRTCzip, "PRTC"),
                   time(ARTzip, "ART"),
                   # time(CUEzip, "CUE"), remove CUE because stop_times are bad
@@ -190,7 +189,6 @@ NovaTime <- rbind(time(PRTCzip, "PRTC"),
                     filter(!route_id %in% notVA$route_id)) %>%
   mutate(time = as.numeric(time),
                     time_hr = time/3600)
-
 
 
 ## Segment Speed -----------------------------------------------------------
@@ -210,6 +208,7 @@ NovaSpeed <- inner_join(Novasegments, NovaTime, by = c("segment_id", "route_id",
          lower =  quantile(speed_mph)[2] - (1.5*IQR(speed_mph))) %>%
   filter(speed_mph >= lower & speed_mph <= upper)
 
+#split into time periods for later time of day analysis
 NovaSpeed <- mutate(NovaSpeed, timeperiod = case_when(
   arrival_time <= parse_hms("01:00:00") ~ "01:00",
   arrival_time <= parse_hms("02:00:00") ~ "02:00",
@@ -244,6 +243,7 @@ saveRDS(NovaSpeed, file.path(Project_path, "NovaSpeed.RDS"))
 
 # Route Speed  -----------------------------------------------------------------
 
+#from GTFS, determine routes and distance 1 way and round trip for each route
 routes <- function(GTFSzip, agency){
   GTFS <- read_gtfs(file.path(GTFS_path, GTFSzip)) %>% gtfs_as_sf()
 
@@ -262,6 +262,7 @@ routes <- function(GTFSzip, agency){
   routes$dist2way <- set_units(routes$dist2way, mi)
   return(routes)
 }
+
 #all nova routes with short and long names
 NovaRoutes <- rbind(routes(ARTzip, "ART"),
                     routes(DASHzip, "DASH"),
@@ -272,13 +273,12 @@ NovaRoutes <- rbind(routes(ARTzip, "ART"),
                     routes(Metrobuszip, "MB") %>%
                       filter(route_id %in% VaMetrobusRoutes$route_id))
 
+#save
 saveRDS(NovaRoutes, file.path(Project_path, "NovaRoutes.RDS"))
-
 st_write(NovaRoutes, file.path(Project_path, "Spatial Data/NovaRoutes.shp"), delete_dsn = TRUE)
 
 ##Route Speed
 #distance and time for each trip
-
 rtspeed <- function(GTFSzip, agency){
     GTFS <- gtfstools::read_gtfs(file.path(GTFS_path, GTFSzip))
     routespeed <- inner_join(GTFS$trips, get_trip_duration(GTFS, unit = "h")) %>%
@@ -292,7 +292,7 @@ rtspeed <- function(GTFSzip, agency){
       summarize(avgspeed = mean(tripspeed))
     return(routespeed)
   }
-
+#for all agencies, master file of route speeds
 RouteSpeed <- rbind(rtspeed(ARTzip, "ART"),
                     rtspeed(DASHzip, "DASH"),
                     rtspeed(FFXzip, "FFX"),
@@ -301,15 +301,17 @@ RouteSpeed <- rbind(rtspeed(ARTzip, "ART"),
                     rtspeed(CUEzip, "CUE"),
                     rtspeed(Metrobuszip, "MB") %>%
                       filter(route_id %in% VaMetrobusRoutes$route_id))
+
+#join with NovaRoutes for spatial data
 RouteSpeed <- inner_join(RouteSpeed, NovaRoutes)
+#save
 st_write(RouteSpeed, file.path(Project_path, "Spatial Data/RouteSpeed.shp"), delete_dsn = TRUE)
 
+## Stats on Route Speed
 #fastest avg route speed by agency
 RouteSpeed %>% filter(avgspeed < set_units(71, mi/h)) %>%
   group_by(Agency) %>% mutate(max = max(avgspeed)) %>% filter(max == avgspeed) %>% st_sf() %>%
   st_write(., file.path(Project_path, "Spatial Data/FastAgencyRoutes.shp"))
-
-
 
 #slowest avg route speed by agency
 RouteSpeed %>% group_by(Agency) %>% mutate(min = min(avgspeed)) %>% filter(min == avgspeed) %>% st_sf() %>%
@@ -326,9 +328,6 @@ NovaSpeed %>% select(Agency, segment_id, speed_mph, geometry) %>%
   inner_join(.,
              NovaRoutes %>% st_drop_geometry() %>% select(route_id, route_short_name, route_long_name)) %>%
   st_write(., file.path(Project_path, "Spatial Data/FastestSegments.shp"))
-
-
-
 
 # Part 1: Descriptive Stats -------------------------------------------------------
 
@@ -429,7 +428,7 @@ WeekdayNovaSpeedSF <- NovaSpeed %>% filter(days != "Sa" | days != "Su") %>%
 st_write(WeekdayNovaSpeedSF, file.path(Project_path, "Spatial Data/WeekdayNovaSpeed.shp"))
 
 
-# Part 2: Cost ------------------------------------------------------------
+# Part 2: Cost of Bus Delays ---------------------------------------------------
 NovaSpeed <- NovaSpeed %>%
   select(-stop_id1, -stop_id2, -upper, -lower, -geometry) %>%
   mutate(AgencyLng =
@@ -439,7 +438,7 @@ NovaSpeed <- NovaSpeed %>%
                                 ifelse(Agency == "FFX", "Fairfax Connector",
                                        Agency)))))
 
-#fy20 NTD transit profiles
+#fy20 NTD transit profiles agency operating cost
 opcost <- st_read(file.path(Project_path, "Analysis/Agency Operating Cost/AgencyOperatingCosts.xlsx")) %>%
   rename(costperVRH = Cost.VRH.2020) %>% as_tibble() %>%
   select(Agency, costperVRH)
@@ -460,11 +459,11 @@ SegmentCost <- NovaSpeed %>% inner_join(., opcost) %>%
 
 ##route level
 RouteCost <- NovaSpeed %>% inner_join(., opcost) %>%
-  #for each segment id, find min time and subtract time - mintime
+  #for each route id, find min time and subtract time - mintime
   group_by(AgencyLng, Agency, route_id, novaseg_id) %>%
   mutate(mintime = min(time_hr),
          difftime = time_hr - mintime) %>%
-  #sum (time - mintime) for each segment
+  #sum (time - mintime) for each route
   group_by(AgencyLng, Agency, route_id,  costperVRH) %>%
   summarize(sumdifftime = sum(difftime)) %>%
   #cost savings
@@ -473,11 +472,11 @@ RouteCost <- NovaSpeed %>% inner_join(., opcost) %>%
 
 #agency level
 AgencyCost <- NovaSpeed %>% inner_join(., opcost) %>%
-  #for each segment id, find min time and subtract time - mintime
+  #for each route id, find min time and subtract time - mintime
   group_by(Agency, route_id, novaseg_id) %>%
   mutate(mintime = min(time_hr),
          difftime = time_hr - mintime) %>%
-  #sum (time - mintime) for each segment
+  #sum (time - mintime) for each agency
   group_by(Agency, costperVRH) %>%
   summarize(sumdifftime = sum(difftime)) %>%
   #cost savings
@@ -494,7 +493,7 @@ st_write(AgencyCost, file.path(Project_path, "CostImpacts.xlsx"),
 
 #Cost per Mile
 
-#rt
+#route
 inner_join(NovaRoutes, RouteCost, by = c("Agency", "route_id")) %>%
   mutate(yrcostmi = as.numeric(yrlycost/dist1way),
          wkcostmi = as.numeric(wklycost/dist1way)) %>%
@@ -503,7 +502,7 @@ inner_join(NovaRoutes, RouteCost, by = c("Agency", "route_id")) %>%
   st_write(., file.path(Project_path, "Spatial Data/RouteCost.shp"), delete_dsn = TRUE)
 
 
-#seg
+#segmnet
 inner_join(SegmentCost,
            Novasegments %>% select(Agency, route_id, novaseg_id, distance, geometry) %>% distinct(),
            by = c("Agency", "novaseg_id")) %>%
@@ -513,7 +512,7 @@ inner_join(SegmentCost,
   st_sf() %>%
   st_write(., file.path(Project_path, "Spatial Data/SegmentCost.shp"), delete_dsn = TRUE)
 
-#Make spatial and add route info
+#join with spatial file and add route info
 SegmentCostSF <-inner_join(SegmentCost,
                            Novasegments %>% select(Agency, route_id, novaseg_id, geometry) %>% distinct(),
                            by = c("Agency", "novaseg_id")) %>%
@@ -523,14 +522,15 @@ RouteCostSF <- inner_join(NovaRoutes, RouteCost, by = c("Agency", "route_id")) %
   mutate(yrcostmi = as.numeric(yrlycost/dist1way),
          wkcostmi = as.numeric(wklycost/dist1way)) %>% st_sf()
 
-
+#save
 st_write(SegmentCostSF, file.path(Project_path, "Spatial Data/SegmentCost.shp"),
          delete_dsn = TRUE)
 st_write(RouteCostSF, file.path(Project_path, "Spatial Data/RouteCost.shp"),
          delete_dsn = TRUE)
 
+
 ##Populations to Benefit----
-#census data
+#tract level census data
 countycensus_tract <- function(County) {
   #load required libraries
   require(tidyverse)
@@ -568,6 +568,7 @@ countycensus_tract <- function(County) {
   CensusCnty$area <- set_units(CensusCnty$area, mi^2)
   return(CensusCnty)
 }
+#county level census data
 countycensus <- function(County) {
   #load required libraries
   require(tidyverse)
@@ -605,6 +606,7 @@ countycensus <- function(County) {
   CensusCnty$area <- set_units(CensusCnty$area, mi^2)
   return(CensusCnty)
 }
+#establish nova region for this study
 NOVA <- c("Arlington","Fairfax County","Fairfax city",
           "Loudoun","Alexandria City","Falls Church City",
           "Prince William","Manassas city","Manassas Park city")
@@ -617,11 +619,10 @@ CensusDataTracts <- countycensus_tract(NOVA) %>%
 CensusCounty <- countycensus(NOVA) %>%
   st_transform(crs = 4326) %>%  summarize(across(where(is.numeric), sum)) %>% mutate(NAME = "Nova")
 
+
 #find populations within 1/4 mile of route
-
-#for each route, find population within
 RouteCostBuff <- st_buffer(RouteCostSF, dist = 400) %>% st_make_valid()
-
+#for each route, find population within
 RoutePop <- st_interpolate_aw(
   CensusDataTracts,
   RouteCostBuff,
@@ -629,14 +630,14 @@ RoutePop <- st_interpolate_aw(
   mutate(CostPersonYr = yrlycost/TotalPopulationE,
          CostPersonWk = wklycost/TotalPopulationE)
 
+#join with spatial file for visualization
 RouteCostPop <- RoutePop %>% select(AgencyLng, route_id,
                     CostPersonYr, CostPersonWk) %>% st_drop_geometry() %>%
   inner_join(., RouteCostSF, by = c("AgencyLng", "route_id")) %>% st_sf() %>%
   st_cast("MULTILINESTRING")
 
-  st_write(RouteCostPop, file.path(Project_path, "Spatial Data/RouteCostPop.shp"), delete_dsn = TRUE)
-
-
+#save
+st_write(RouteCostPop, file.path(Project_path, "Spatial Data/RouteCostPop.shp"), delete_dsn = TRUE)
 st_write(RoutePop, file.path(Project_path, "Analysis/RouteCost.xlsx"), delete_dsn = TRUE)
 st_write(RoutePop,
          file.path(Project_path, "Spatial Data/RoutePop.shp"), delete_dsn = TRUE)
@@ -675,7 +676,9 @@ tciSF <- inner_join(TCI,
 st_write(tciSF, file.path(Project_path, "Spatial Data/TCI.shp"))
 st_write(TCIagg, file.path(Project_path, "Spatial Data/TCIagg.shp"), delete_dsn = TRUE)
 
-## Weighted TCI ------
+
+## UNUSED CALCS ----------------------------
+# Weighted TCI
 # distance weigthed TCI for agency route and op hour
 dir_id <- function(GTFSzip, Agency) {
   read_gtfs(file.path(GTFS_path, GTFSzip)) %>% .$trips %>%
@@ -760,7 +763,7 @@ st_write(wTCI_dir, file.path(Project_path, "Analysis/TransitCongestion.xlsx"),
          layer = "WeightedTCI_direction_id", delete_layer = TRUE)
 
 
-# INRIX data --------------------------------------------------------------
+# INRIX data
 
 ispeeds <- st_read(file.path(Project_path, "Data/Inrix Data/Speeds.csv")) %>% as_tibble()
 
@@ -790,19 +793,3 @@ speed_tmc <- inner_join(tmc_line, ispeeds, by = c("tmc" = "tmc_code")) %>% as_ti
 
 st_write(speed_tmc, file.path(Project_path, "data/Inrix Data/Speed_TMC.shp"))
 
-
-
-
-# Rasterize NovaSpeeds ---------------------------------------------------
-amspeed <- st_read(file.path(Project_path, "Spatial Data/AMPeakSpeeds.shp"))
-
-am_rast <- st_rasterize(amspeed %>% dplyr::select(avgspeed, geometry))
-
-x <- st_make_grid(amspeed, square = FALSE)
-
-
-
-am_interp <- st_interpolate_aw(amspeed["avgspeed"], x, extensive = FALSE)
-
-
-write_stars(am_rast, file.path(Project_path, "Spatial Data/AMSpeed_square.tif"))
